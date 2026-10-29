@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
-import { Search, User, Building2, Briefcase, CheckSquare, Plus, ArrowRight, X } from 'lucide-react';
+import { Search, User, Building2, Briefcase, CheckSquare, Plus, ArrowRight, X, Ship } from 'lucide-react';
 import { useTranslation } from '../Context/LanguageContext';
 
 export default function CommandPalette({ isOpen, onClose, onSelectRecord, onOpenCreateModal }) {
     const { t, isRTL } = useTranslation();
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState({ contacts: [], companies: [], opportunities: [], tasks: [] });
+    const [results, setResults] = useState({ contacts: [], companies: [], opportunities: [], tasks: [], shipments: [] });
     const [loading, setLoading] = useState(false);
     const inputRef = useRef(null);
 
@@ -15,13 +15,13 @@ export default function CommandPalette({ isOpen, onClose, onSelectRecord, onOpen
             setTimeout(() => inputRef.current?.focus(), 50);
         } else {
             setQuery('');
-            setResults({ contacts: [], companies: [], opportunities: [], tasks: [] });
+            setResults({ contacts: [], companies: [], opportunities: [], tasks: [], shipments: [] });
         }
     }, [isOpen]);
 
     useEffect(() => {
         if (!query.trim()) {
-            setResults({ contacts: [], companies: [], opportunities: [], tasks: [] });
+            setResults({ contacts: [], companies: [], opportunities: [], tasks: [], shipments: [] });
             return;
         }
 
@@ -30,7 +30,13 @@ export default function CommandPalette({ isOpen, onClose, onSelectRecord, onOpen
             try {
                 const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
-                setResults(data);
+                setResults({
+                    contacts: data.contacts || [],
+                    companies: data.companies || [],
+                    opportunities: data.opportunities || [],
+                    tasks: data.tasks || [],
+                    shipments: data.shipments || [],
+                });
             } catch (err) {
                 console.error(err);
             } finally {
@@ -53,13 +59,14 @@ export default function CommandPalette({ isOpen, onClose, onSelectRecord, onOpen
 
     if (!isOpen) return null;
 
-    const totalResults = results.contacts.length + results.companies.length + results.opportunities.length + results.tasks.length;
+    const totalResults = results.contacts.length + results.companies.length + results.opportunities.length + results.tasks.length + results.shipments.length;
 
     const handleSelect = (type, item) => {
         onClose();
         if (onSelectRecord) {
             onSelectRecord(type, item);
         } else {
+            if (type === 'shipment') router.visit('/shipments');
             if (type === 'contact') router.visit('/contacts');
             if (type === 'company') router.visit('/companies');
             if (type === 'opportunity') router.visit('/opportunities');
@@ -102,6 +109,16 @@ export default function CommandPalette({ isOpen, onClose, onSelectRecord, onOpen
                             {t('quick_actions')}
                         </div>
                         <div className="space-y-0.5">
+                            <button
+                                onClick={() => { onClose(); onOpenCreateModal('shipment'); }}
+                                className="w-full flex items-center justify-between px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800/60 rounded-lg group text-start"
+                            >
+                                <span className="flex items-center">
+                                    <Ship className="w-4 h-4 me-2.5 text-blue-500 group-hover:text-blue-600" />
+                                    {t('new_shipment')}
+                                </span>
+                                <Plus className="w-4 h-4 text-neutral-400 opacity-0 group-hover:opacity-100" />
+                            </button>
                             <button
                                 onClick={() => { onClose(); onOpenCreateModal('contact'); }}
                                 className="w-full flex items-center justify-between px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 rounded-lg group text-start"
@@ -253,6 +270,31 @@ export default function CommandPalette({ isOpen, onClose, onSelectRecord, onOpen
                                                 <CheckSquare className="w-4 h-4 me-2.5 text-neutral-400" />
                                                 <span className="font-medium text-neutral-900 dark:text-neutral-100 me-2">{tk.title}</span>
                                                 <span className="text-xs text-neutral-400">({t(tk.status) || tk.status})</span>
+                                            </span>
+                                            <ArrowRight className={`w-3.5 h-3.5 text-neutral-400 opacity-0 group-hover:opacity-100 ${isRTL ? 'rotate-180' : ''}`} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {results.shipments.length > 0 && (
+                            <div>
+                                <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider px-3 py-1">
+                                    {t('shipments')} ({results.shipments.length})
+                                </div>
+                                <div className="space-y-0.5">
+                                    {results.shipments.map((shp) => (
+                                        <button
+                                            key={shp.id}
+                                            onClick={() => handleSelect('shipment', shp)}
+                                            className="w-full flex items-center justify-between px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 rounded-lg group text-start"
+                                        >
+                                            <span className="flex items-center">
+                                                <Ship className="w-4 h-4 me-2.5 text-blue-500" />
+                                                <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100 me-2">{shp.shipment_number}</span>
+                                                <span className="text-xs text-neutral-400 me-2">· {shp.customer?.name}</span>
+                                                <span className="text-xs text-neutral-400">({shp.mode})</span>
                                             </span>
                                             <ArrowRight className={`w-3.5 h-3.5 text-neutral-400 opacity-0 group-hover:opacity-100 ${isRTL ? 'rotate-180' : ''}`} />
                                         </button>

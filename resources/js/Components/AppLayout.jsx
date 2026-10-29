@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { 
     LayoutDashboard, Users, Building2, Briefcase, CheckSquare, 
-    Search, Moon, Sun, Plus, ChevronRight, ChevronDown, User, Languages
+    Search, Moon, Sun, Plus, ChevronRight, ChevronDown, User, Languages, Ship, Layers, Receipt
 } from 'lucide-react';
 import { useTranslation } from '../Context/LanguageContext';
 import CommandPalette from './CommandPalette';
@@ -11,14 +11,16 @@ import CreatePersonModal from './Modals/CreatePersonModal';
 import CreateCompanyModal from './Modals/CreateCompanyModal';
 import CreateDealModal from './Modals/CreateDealModal';
 import CreateTaskModal from './Modals/CreateTaskModal';
+import CreateShipmentModal from './Modals/CreateShipmentModal';
 
-export default function AppLayout({ children, title, companies = [], contacts = [], opportunities = [] }) {
+export default function AppLayout({ children, title, companies = [], contacts = [], opportunities = [], ports = [], carriers = [], clients = [] }) {
     const { url } = usePage();
     const { t, locale, toggleLocale, isRTL } = useTranslation();
     const [darkMode, setDarkMode] = useState(false);
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
     // Dedicated Modals State
+    const [createShipmentOpen, setCreateShipmentOpen] = useState(false);
     const [createPersonOpen, setCreatePersonOpen] = useState(false);
     const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
     const [createDealOpen, setCreateDealOpen] = useState(false);
@@ -139,6 +141,9 @@ export default function AppLayout({ children, title, companies = [], contacts = 
 
     const navItems = [
         { name: t('dashboard'), href: '/', icon: LayoutDashboard, active: url === '/' || url === '/dashboard' },
+        { name: t('shipments'), href: '/shipments', icon: Ship, active: url.startsWith('/shipments') },
+        { name: t('billing'), href: '/billing', icon: Receipt, active: url.startsWith('/billing') },
+        { name: t('master_data'), href: '/master-data', icon: Layers, active: url.startsWith('/master-data') },
         { name: t('people'), href: '/contacts', icon: Users, active: url.startsWith('/contacts') },
         { name: t('companies'), href: '/companies', icon: Building2, active: url.startsWith('/companies') },
         { name: t('opportunities'), href: '/opportunities', icon: Briefcase, active: url.startsWith('/opportunities') },
@@ -146,6 +151,7 @@ export default function AppLayout({ children, title, companies = [], contacts = 
     ];
 
     const handleOpenCreateModal = (type = 'contact') => {
+        if (type === 'shipment') setCreateShipmentOpen(true);
         if (type === 'contact' || type === 'person') setCreatePersonOpen(true);
         if (type === 'company') setCreateCompanyOpen(true);
         if (type === 'opportunity' || type === 'deal') setCreateDealOpen(true);
@@ -303,6 +309,13 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                         {createDropdownOpen && (
                             <div className="absolute end-0 top-full mt-2 z-50 w-52 glass-popover rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.7)] border border-neutral-200/90 dark:border-neutral-700/70 p-1.5 space-y-0.5 animate-fade-in-scale">
                                 <button
+                                    onClick={() => { setCreateDropdownOpen(false); setCreateShipmentOpen(true); }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer border-b border-neutral-100 dark:border-neutral-800/60 pb-2 mb-1"
+                                >
+                                    <Ship className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                                    <span>{t('new_shipment')}</span>
+                                </button>
+                                <button
                                     onClick={() => { setCreateDropdownOpen(false); setCreatePersonOpen(true); }}
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
                                 >
@@ -330,6 +343,14 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                                     <CheckSquare className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                     <span>{t('new_task')}</span>
                                 </button>
+                                <Link
+                                    href="/billing"
+                                    onClick={() => setCreateDropdownOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer border-t border-neutral-100 dark:border-neutral-800/60 pt-2 mt-1"
+                                >
+                                    <Receipt className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                    <span>{t('new_invoice')}</span>
+                                </Link>
                             </div>
                         )}
                     </div>
@@ -350,6 +371,14 @@ export default function AppLayout({ children, title, companies = [], contacts = 
             />
 
             {/* Dedicated Creation Modals */}
+            <CreateShipmentModal
+                isOpen={createShipmentOpen}
+                onClose={() => setCreateShipmentOpen(false)}
+                clients={clients?.length ? clients : companies}
+                carriers={carriers?.length ? carriers : companies}
+                ports={ports}
+            />
+
             <CreatePersonModal
                 isOpen={createPersonOpen}
                 onClose={() => setCreatePersonOpen(false)}

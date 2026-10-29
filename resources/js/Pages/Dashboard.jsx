@@ -7,15 +7,21 @@ import { useTranslation } from '../Context/LanguageContext';
 import { 
     DollarSign, Users, Building2, Briefcase, CheckSquare, 
     ArrowUpRight, Clock, Activity, CheckCircle2, Circle, 
-    TrendingUp, Calendar
+    TrendingUp, Calendar, Ship, Plane, Truck, ArrowRight
 } from 'lucide-react';
 
-export default function Dashboard({ stats, stages, recentActivities, upcomingTasks, topOpportunities }) {
+export default function Dashboard({ stats, stages, recentActivities, upcomingTasks, topOpportunities, recentShipments = [] }) {
     const { t, locale, isRTL } = useTranslation();
     const [drawerState, setDrawerState] = useState({ isOpen: false, type: 'opportunity', record: null });
 
     const handleToggleTask = (taskId) => {
         router.patch(`/tasks/${taskId}/toggle`, {}, { preserveScroll: true });
+    };
+
+    const getModeIcon = (mode) => {
+        if (mode === 'air') return <Plane className="w-3.5 h-3.5 text-purple-500" />;
+        if (mode === 'land') return <Truck className="w-3.5 h-3.5 text-amber-500" />;
+        return <Ship className="w-3.5 h-3.5 text-blue-500" />;
     };
 
     return (
@@ -25,7 +31,7 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
             <div className="p-8 max-w-7xl mx-auto space-y-8">
                 
                 {/* Greeting & Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                             {t('welcome_back')}
@@ -37,12 +43,57 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
 
                     <div className="flex items-center gap-2">
                         <Link
+                            href="/shipments"
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-2xs gap-1.5"
+                        >
+                            <Ship className="w-3.5 h-3.5" />
+                            <span>{t('shipments')} ({stats.activeShipmentsCount || 0})</span>
+                        </Link>
+                        <Link
                             href="/opportunities?view=kanban"
                             className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 transition-colors gap-1.5"
                         >
                             <TrendingUp className="w-3.5 h-3.5" />
                             <span>{t('open_pipeline_board')}</span>
                         </Link>
+                    </div>
+                </div>
+
+                {/* Freight Forwarding Highlights Banner */}
+                <div className="p-5 rounded-2xl border border-blue-200/80 dark:border-blue-900/50 bg-gradient-to-r from-blue-50/80 via-white to-neutral-50 dark:from-[#0d1a2d] dark:via-[#13161c] dark:to-[#161616] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                            <Ship className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                                    {t('freight_forwarding_operations') || 'Freight Operations & Logistics'}
+                                </h3>
+                                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                                    Multimodal
+                                </span>
+                            </div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                {stats.activeShipmentsCount || 0} {t('active_shipments_in_transit') || 'active shipments running across ocean, air, and land.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs font-mono">
+                        <div className="text-end">
+                            <div className="text-[10px] text-neutral-400 uppercase font-sans">{t('freight_revenue') || 'Freight Invoiced'}</div>
+                            <div className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+                                ${(stats.freightRevenue || 0).toLocaleString()}
+                            </div>
+                        </div>
+                        <div className="h-8 w-px bg-neutral-200 dark:bg-neutral-800"></div>
+                        <div className="text-end">
+                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-sans font-semibold">{t('gross_profit')}</div>
+                            <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                +${(stats.freightProfit || 0).toLocaleString()}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -220,6 +271,55 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                         </div>
                     </div>
                 </div>
+
+                {/* Recent Multimodal Shipments */}
+                {recentShipments.length > 0 && (
+                    <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161616] shadow-2xs space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider flex items-center gap-2">
+                                <Ship className="w-4 h-4 text-blue-500" />
+                                <span>{t('active_multimodal_shipments') || 'Active Multimodal Shipments'}</span>
+                            </h3>
+                            <Link href="/shipments" className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 flex items-center gap-1">
+                                <span>{t('view_all_shipments') || 'View all'}</span>
+                                <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {recentShipments.map((shp) => (
+                                <Link
+                                    key={shp.id}
+                                    href="/shipments"
+                                    className="p-3.5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/60 dark:bg-[#1a1a1a] hover:border-blue-500/50 hover:bg-white dark:hover:bg-[#202020] transition-all space-y-2 group block"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            {getModeIcon(shp.mode)}
+                                            <span className="font-mono font-bold text-xs text-neutral-900 dark:text-neutral-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                {shp.shipment_number}
+                                            </span>
+                                        </div>
+                                        <StatusBadge type="status" value={shp.status} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-300">
+                                        <span className="font-mono">{shp.origin_port?.code || '—'}</span>
+                                        <span className="text-neutral-400">➔</span>
+                                        <span className="font-mono">{shp.destination_port?.code || '—'}</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-1 border-t border-neutral-200/50 dark:border-neutral-800/60">
+                                        <span className="truncate max-w-[60%]">{shp.customer?.name}</span>
+                                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                            +${Number(shp.gross_profit || 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Recent Activities Timeline */}
                 <div className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#161616] shadow-2xs space-y-4">

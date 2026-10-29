@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
+use App\Models\Shipment;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,11 +50,20 @@ class SearchController extends Controller
             ->take(5)
             ->get();
 
+        $shipments = Shipment::with(['customer:id,name', 'carrier:id,name'])
+            ->where('shipment_number', 'like', "%{$query}%")
+            ->orWhere('booking_number', 'like', "%{$query}%")
+            ->orWhere('mbl_number', 'like', "%{$query}%")
+            ->orWhere('commodity', 'like', "%{$query}%")
+            ->take(5)
+            ->get();
+
         return response()->json([
             'contacts' => $contacts,
             'companies' => $companies,
             'opportunities' => $opportunities,
             'tasks' => $tasks,
+            'shipments' => $shipments,
         ]);
     }
 }

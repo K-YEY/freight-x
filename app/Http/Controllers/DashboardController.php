@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
+use App\Models\Shipment;
 use App\Models\Task;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,6 +59,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Freight Operations Stats
+        $activeShipmentsCount = Shipment::whereNotIn('status', ['delivered', 'cancelled'])->count();
+        $freightRevenue = (float) Shipment::sum('total_revenue');
+        $freightProfit = (float) Shipment::sum('gross_profit');
+        $recentShipments = Shipment::with([
+            'customer:id,name',
+            'carrier:id,name',
+            'originPort:id,code,name',
+            'destinationPort:id,code,name',
+        ])->latest('id')->take(5)->get();
+
         return Inertia::render('Dashboard', [
             'stats' => [
                 'totalPipeline' => (float) $totalPipeline,
@@ -65,11 +77,15 @@ class DashboardController extends Controller
                 'contactsCount' => $contactsCount,
                 'companiesCount' => $companiesCount,
                 'openTasksCount' => $openTasksCount,
+                'activeShipmentsCount' => $activeShipmentsCount,
+                'freightRevenue' => $freightRevenue,
+                'freightProfit' => $freightProfit,
             ],
             'stages' => array_values($stages),
             'recentActivities' => $recentActivities,
             'upcomingTasks' => $upcomingTasks,
             'topOpportunities' => $topOpportunities,
+            'recentShipments' => $recentShipments,
         ]);
     }
 }
