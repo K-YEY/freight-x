@@ -5,6 +5,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 
 import { LanguageProvider } from './Context/LanguageContext';
+import { CurrencyProvider } from './Context/CurrencyContext';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Twenty CRM';
 
@@ -15,7 +16,9 @@ createInertiaApp({
         const root = createRoot(el);
         root.render(
             <LanguageProvider>
-                <App {...props} />
+                <CurrencyProvider>
+                    <App {...props} />
+                </CurrencyProvider>
             </LanguageProvider>
         );
     },

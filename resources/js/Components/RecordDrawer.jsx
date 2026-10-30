@@ -3,7 +3,9 @@ import { router } from '@inertiajs/react';
 import { 
     X, User, Building2, Briefcase, Mail, Phone, MapPin, 
     Calendar, DollarSign, Clock, Plus, CheckCircle2, Circle, 
-    FileText, Activity, Trash2, ExternalLink
+    FileText, Activity, Trash2, ExternalLink, Ship, Truck,
+    ShieldCheck, Plane, CreditCard, Receipt, FileSpreadsheet,
+    Building, Hash, Shield, Globe
 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { useTranslation } from '../Context/LanguageContext';
@@ -73,17 +75,98 @@ export default function RecordDrawer({ isOpen, onClose, type, record, onEdit }) 
     };
 
     const getTitle = () => {
-        if (type === 'contact') return record.name || `${record.first_name} ${record.last_name}`;
-        if (type === 'company') return record.name;
+        if (type === 'contact') {
+            if (record.company_name) return `${record.company_name} (${record.name || `${record.first_name} ${record.last_name}`})`;
+            return record.name || `${record.first_name} ${record.last_name}`;
+        }
+        if (type === 'company') {
+            if (record.code) return `${record.name} [${record.code}]`;
+            return record.name;
+        }
         if (type === 'opportunity') return record.name;
         return t('details');
     };
 
     const getIcon = () => {
-        if (type === 'contact') return <User className="w-5 h-5 text-neutral-500" />;
-        if (type === 'company') return <Building2 className="w-5 h-5 text-neutral-500" />;
+        if (type === 'contact') return <User className="w-5 h-5 text-blue-500" />;
+        if (type === 'company') {
+            if (record.partner_type === 'shipping_line') return <Ship className="w-5 h-5 text-blue-500" />;
+            if (record.partner_type === 'trucker') return <Truck className="w-5 h-5 text-amber-500" />;
+            if (record.partner_type === 'customs_broker') return <ShieldCheck className="w-5 h-5 text-purple-500" />;
+            if (record.partner_type === 'airline') return <Plane className="w-5 h-5 text-sky-500" />;
+            return <Building2 className="w-5 h-5 text-neutral-500" />;
+        }
         if (type === 'opportunity') return <Briefcase className="w-5 h-5 text-neutral-500" />;
         return null;
+    };
+
+    const getCustomerTypeBadge = (role) => {
+        switch (role) {
+            case 'importer':
+                return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60">مستورد (Importer)</span>;
+            case 'exporter':
+                return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60">مُصدّر (Exporter)</span>;
+            case 'trader':
+                return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60">تاجر / وسيط (Trader)</span>;
+            case 'broker_client':
+                return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60">عميل تخليص (Clearance)</span>;
+            default:
+                return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">أفراد (Personal)</span>;
+        }
+    };
+
+    const getPartnerTypeBadge = (partnerType) => {
+        switch (partnerType) {
+            case 'shipping_line':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60">
+                        <Ship className="w-3 h-3 text-blue-500" />
+                        <span>خط ملاحي (Shipping Line)</span>
+                    </span>
+                );
+            case 'trucker':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60">
+                        <Truck className="w-3 h-3 text-amber-500" />
+                        <span>نقل بري (Trucker)</span>
+                    </span>
+                );
+            case 'customs_broker':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60">
+                        <ShieldCheck className="w-3 h-3 text-purple-500" />
+                        <span>مخلص جمركي (Broker)</span>
+                    </span>
+                );
+            case 'overseas_agent':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60">
+                        <Globe className="w-3 h-3 text-emerald-500" />
+                        <span>وكيل دولي (Overseas Agent)</span>
+                    </span>
+                );
+            case 'warehouse_operator':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200">
+                        <Building2 className="w-3 h-3 text-slate-500" />
+                        <span>مستودع / محطة (CFS)</span>
+                    </span>
+                );
+            case 'airline':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/60">
+                        <Plane className="w-3 h-3 text-sky-500" />
+                        <span>طيران شحن (Airline)</span>
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        <Building2 className="w-3 h-3 text-neutral-400" />
+                        <span>شريك لوجستي</span>
+                    </span>
+                );
+        }
     };
 
     return (
@@ -101,7 +184,11 @@ export default function RecordDrawer({ isOpen, onClose, type, record, onEdit }) 
                                 {getTitle()}
                             </h2>
                             <span className="text-xs text-neutral-400 capitalize">
-                                {t(type) || type} {t('details')}
+                                {type === 'contact' 
+                                    ? (record.customer_type ? `عميل شحن • ${record.customer_type}` : 'عميل شحن')
+                                    : type === 'company' 
+                                        ? (record.partner_type ? `شريك لوجستي • ${record.partner_type}` : 'شريك لوجستي') 
+                                        : `${t(type) || type} ${t('details')}`}
                             </span>
                         </div>
                     </div>
@@ -184,100 +271,212 @@ export default function RecordDrawer({ isOpen, onClose, type, record, onEdit }) 
                     {/* Tab 1: Overview */}
                     {activeTab === 'overview' && (
                         <div className="space-y-6">
-                            {/* Contact Fields */}
+                            {/* Contact / Customer Fields */}
                             {type === 'contact' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('status')}</span>
-                                        <StatusBadge type="status" value={record.status} />
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('email')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                                            <Mail className="w-3.5 h-3.5 text-neutral-400" />
-                                            {record.email || '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('phone')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                                            <Phone className="w-3.5 h-3.5 text-neutral-400" />
-                                            {record.phone || '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('job_title')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200">
-                                            {record.job_title || '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('company_name')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                                            <Building2 className="w-3.5 h-3.5 text-neutral-400" />
-                                            {record.company?.name || '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('city')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                                            <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                                            {record.city || '—'}
-                                        </span>
-                                    </div>
-                                    {record.tags && record.tags.length > 0 && (
-                                        <div className="pt-2">
-                                            <span className="text-xs text-neutral-400 block mb-2">Tags</span>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {record.tags.map((tag, idx) => (
-                                                    <span key={idx} className="px-2 py-0.5 rounded text-[11px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
-                                                        {tag}
-                                                    </span>
-                                                ))}
+                                <div className="space-y-5">
+                                    {/* Primary Info */}
+                                    <div className="p-4 rounded-xl bg-neutral-50/80 dark:bg-[#1a1a1a] border border-neutral-200/80 dark:border-neutral-800 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">حالة العميل وتصنيفه</span>
+                                            <div className="flex items-center gap-2">
+                                                {getCustomerTypeBadge(record.customer_type)}
+                                                <StatusBadge type="status" value={record.status} />
                                             </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-neutral-800">
+                                            <span className="text-xs text-neutral-400">الاسم التجاري / الشركة</span>
+                                            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
+                                                <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                                                {record.company_name || record.company?.name || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">الممثل / مسؤول التواصل</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200">
+                                                {record.name || `${record.first_name || ''} ${record.last_name || ''}`.trim() || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">{t('email')}</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                                                <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                                                {record.email || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">{t('phone')}</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 font-mono flex items-center gap-1.5">
+                                                <Phone className="w-3.5 h-3.5 text-neutral-400" />
+                                                {record.phone || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">المدينة / الدولة</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                                                <MapPin className="w-3.5 h-3.5 text-neutral-400" />
+                                                {[record.city, record.country].filter(Boolean).join(', ') || '—'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Customs & Tax Identity Card */}
+                                    <div className="p-4 rounded-xl bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 space-y-3">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-blue-900 dark:text-blue-300">
+                                            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                            <span>الهوية الجمركية والضريبية (Customs & Tax ID)</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                                            <div className="p-2.5 rounded-lg bg-white/80 dark:bg-[#151515] border border-blue-100 dark:border-neutral-800">
+                                                <span className="text-[10px] text-neutral-400 block mb-0.5">الرقم الضريبي (Tax ID)</span>
+                                                <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{record.tax_id || '—'}</span>
+                                            </div>
+
+                                            <div className="p-2.5 rounded-lg bg-white/80 dark:bg-[#151515] border border-blue-100 dark:border-neutral-800">
+                                                <span className="text-[10px] text-neutral-400 block mb-0.5">السجل التجاري (Commercial Reg)</span>
+                                                <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{record.commercial_registry || '—'}</span>
+                                            </div>
+
+                                            <div className="p-2.5 rounded-lg bg-white/80 dark:bg-[#151515] border border-blue-100 dark:border-neutral-800">
+                                                <span className="text-[10px] text-neutral-400 block mb-0.5">البطاقة الاستيرادية / الجمركية</span>
+                                                <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{record.customs_card_number || '—'}</span>
+                                            </div>
+
+                                            <div className="p-2.5 rounded-lg bg-white/80 dark:bg-[#151515] border border-blue-100 dark:border-neutral-800">
+                                                <span className="text-[10px] text-neutral-400 block mb-0.5">رقم نافذة (Nafeza ID / ACID)</span>
+                                                <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{record.nafeza_id || '—'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Financial & Billing Terms Card */}
+                                    <div className="p-4 rounded-xl bg-neutral-50/80 dark:bg-[#1a1a1a] border border-neutral-200/80 dark:border-neutral-800 space-y-3">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                                            <CreditCard className="w-4 h-4 text-emerald-500" />
+                                            <span>الشروط المالية والحد الائتماني (Credit Terms)</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-neutral-800">
+                                            <span className="text-xs text-neutral-400">شروط السداد</span>
+                                            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                                                {record.payment_terms === 'credit_15' && 'آجل 15 يوم (Credit 15)'}
+                                                {record.payment_terms === 'credit_30' && 'آجل 30 يوم (Credit 30)'}
+                                                {record.payment_terms === 'credit_60' && 'آجل 60 يوم (Credit 60)'}
+                                                {(!record.payment_terms || record.payment_terms === 'cash') && 'نقدي عند الإصدار (Cash on BL)'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-neutral-800">
+                                            <span className="text-xs text-neutral-400">الحد الائتماني (Credit Limit)</span>
+                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                                ${Number(record.credit_limit || 0).toLocaleString()}
+                                            </span>
+                                        </div>
+
+                                        {record.billing_address && (
+                                            <div>
+                                                <span className="text-[11px] text-neutral-400 block mb-1">عنوان الفوترة المعتمد</span>
+                                                <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-white dark:bg-[#141414] p-2.5 rounded-lg border border-neutral-200/60 dark:border-neutral-800">
+                                                    {record.billing_address}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Operational Notes */}
+                                    {record.notes && (
+                                        <div className="p-4 rounded-xl bg-neutral-50/80 dark:bg-[#1a1a1a] border border-neutral-200/80 dark:border-neutral-800">
+                                            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 block mb-2">تعليمات وملاحظات الشحن للعميل</span>
+                                            <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                                                {record.notes}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
                             )}
 
-                            {/* Company Fields */}
+                            {/* Company / Logistics Partner Fields */}
                             {type === 'company' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('domain')}</span>
-                                        <a href={record.website_url || `https://${record.domain}`} target="_blank" rel="noreferrer" className="text-xs font-medium text-neutral-800 dark:text-neutral-200 hover:underline flex items-center gap-1">
-                                            {record.domain || '—'}
-                                            <ExternalLink className="w-3 h-3 text-neutral-400" />
-                                        </a>
+                                <div className="space-y-5">
+                                    {/* Partner Classification */}
+                                    <div className="p-4 rounded-xl bg-neutral-50/80 dark:bg-[#1a1a1a] border border-neutral-200/80 dark:border-neutral-800 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">تصنيف الشريك / الخط</span>
+                                            {getPartnerTypeBadge(record.partner_type)}
+                                        </div>
+
+                                        {record.code && (
+                                            <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-neutral-800">
+                                                <span className="text-xs text-neutral-400">رمز الشريك الملاحي (SCAC / Code)</span>
+                                                <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-mono text-xs font-bold uppercase tracking-wider border border-blue-200 dark:border-blue-900">
+                                                    {record.code}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">مسؤول الاتصال (Key Account)</span>
+                                            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                                                {record.contact_person || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">الهاتف المباشر</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 font-mono flex items-center gap-1.5">
+                                                <Phone className="w-3.5 h-3.5 text-neutral-400" />
+                                                {record.phone || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">البريد الإلكتروني للعمليات</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                                                <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                                                {record.email || '—'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('industry')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200">
-                                            {record.industry || '—'}
-                                        </span>
+
+                                    {/* Official & Port Data */}
+                                    <div className="p-4 rounded-xl bg-neutral-50/80 dark:bg-[#1a1a1a] border border-neutral-200/80 dark:border-neutral-800 space-y-3">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                                            <Building className="w-4 h-4 text-blue-500" />
+                                            <span>البيانات الرسمية والميناء (Corporate & Port)</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-neutral-800">
+                                            <span className="text-xs text-neutral-400">السجل / الملف الضريبي</span>
+                                            <span className="text-xs font-mono font-bold text-neutral-800 dark:text-neutral-200">
+                                                {record.tax_number || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60 dark:border-neutral-800">
+                                            <span className="text-xs text-neutral-400">{t('location')}</span>
+                                            <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200">
+                                                {[record.address, record.city, record.country].filter(Boolean).join(', ') || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-neutral-400">{t('domain')}</span>
+                                            <a href={record.website_url || `https://${record.domain}`} target="_blank" rel="noreferrer" className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                {record.domain || record.website_url || '—'}
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('employees')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 font-mono">
-                                            {record.employees_count ? record.employees_count.toLocaleString() : '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('annual_revenue')}</span>
-                                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 font-mono">
-                                            {record.annual_revenue ? `$${Number(record.annual_revenue).toLocaleString()}` : '—'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-                                        <span className="text-xs text-neutral-400">{t('location')}</span>
-                                        <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200">
-                                            {[record.city, record.country].filter(Boolean).join(', ') || '—'}
-                                        </span>
-                                    </div>
+
                                     {record.description && (
-                                        <div className="pt-2">
-                                            <span className="text-xs text-neutral-400 block mb-1">{t('about')}</span>
-                                            <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50 dark:bg-[#1a1a1a] p-3 rounded-lg border border-neutral-200 dark:border-neutral-800">
+                                        <div className="p-4 rounded-xl bg-neutral-50/80 dark:bg-[#1a1a1a] border border-neutral-200/80 dark:border-neutral-800">
+                                            <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 block mb-1">الخدمات والموانئ المغطاة (About & Services)</span>
+                                            <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed">
                                                 {record.description}
                                             </p>
                                         </div>

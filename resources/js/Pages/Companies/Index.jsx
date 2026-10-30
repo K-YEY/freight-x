@@ -9,14 +9,17 @@ import CreateCompanyModal from '../../Components/Modals/CreateCompanyModal';
 import { useTranslation } from '../../Context/LanguageContext';
 import { 
     Plus, Building2, Globe, Users, DollarSign, 
-    Trash2, ExternalLink
+    Trash2, ExternalLink, Ship, Truck, ShieldCheck, 
+    Plane, Phone, Mail, Hash, MapPin
 } from 'lucide-react';
 
-export default function CompaniesIndex({ companies, industries, filters }) {
+export default function CompaniesIndex({ companies = [], industries = [], partnerTypeCounts = {}, filters = {} }) {
     const { t, isRTL } = useTranslation();
     const [search, setSearch] = useState(filters.search || '');
+    const [activePartnerType, setActivePartnerType] = useState(filters.partner_type || '');
     const [activeFilters, setActiveFilters] = useState({
         industry: filters.industry || '',
+        partner_type: filters.partner_type || '',
     });
     const [density, setDensity] = useState('normal');
     const [selectedIds, setSelectedIds] = useState([]);
@@ -24,20 +27,41 @@ export default function CompaniesIndex({ companies, industries, filters }) {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [createModalOpen, setCreateModalOpen] = useState(false);
 
+    const handleSelectTypeTab = (partnerTypeKey) => {
+        setActivePartnerType(partnerTypeKey);
+        const nextFilters = { ...activeFilters, partner_type: partnerTypeKey };
+        setActiveFilters(nextFilters);
+        router.get('/companies', { 
+            search, 
+            partner_type: partnerTypeKey || undefined,
+            industry: activeFilters.industry || undefined 
+        }, { preserveState: true, replace: true });
+    };
+
     const handleFilterChange = (key, value) => {
         const nextFilters = { ...activeFilters, [key]: value };
         setActiveFilters(nextFilters);
-        router.get('/companies', { search, industry: nextFilters.industry }, { preserveState: true, replace: true });
+        if (key === 'partner_type') setActivePartnerType(value);
+        router.get('/companies', { 
+            search, 
+            partner_type: nextFilters.partner_type || undefined,
+            industry: nextFilters.industry || undefined 
+        }, { preserveState: true, replace: true });
     };
 
     const handleClearFilters = () => {
-        setActiveFilters({ industry: '' });
+        setActiveFilters({ industry: '', partner_type: '' });
+        setActivePartnerType('');
         router.get('/companies', { search }, { preserveState: true, replace: true });
     };
 
     const handleSearchChange = (val) => {
         setSearch(val);
-        router.get('/companies', { search: val, industry: activeFilters.industry }, { preserveState: true, replace: true });
+        router.get('/companies', { 
+            search: val, 
+            partner_type: activePartnerType || undefined,
+            industry: activeFilters.industry || undefined 
+        }, { preserveState: true, replace: true });
     };
 
     // Inline edit handler
@@ -70,7 +94,7 @@ export default function CompaniesIndex({ companies, industries, filters }) {
     };
 
     const handleBulkDelete = () => {
-        if (!confirm(`Are you sure you want to delete ${selectedIds.length} companies?`)) return;
+        if (!confirm(`هل أنت متأكد من حذف ${selectedIds.length} من الشركاء / الخطوط؟`)) return;
 
         selectedIds.forEach((id) => {
             router.delete(`/companies/${id}`, { preserveScroll: true });
@@ -80,13 +104,15 @@ export default function CompaniesIndex({ companies, industries, filters }) {
 
     // Export to CSV
     const handleExportCsv = () => {
-        const headers = ['Company Name', 'Domain', 'Industry', 'Employees', 'Annual Revenue', 'City', 'Country'];
+        const headers = ['Partner Name', 'SCAC / Code', 'Partner Category', 'Contact Person', 'Phone', 'Email', 'Tax / Reg Number', 'City', 'Country'];
         const rows = companies.map((c) => [
             c.name,
-            c.domain || '',
-            c.industry || '',
-            c.employees_count || '',
-            c.annual_revenue || '',
+            c.code || '',
+            c.partner_type || 'shipping_line',
+            c.contact_person || '',
+            c.phone || '',
+            c.email || '',
+            c.tax_number || '',
             c.city || '',
             c.country || '',
         ]);
@@ -97,13 +123,79 @@ export default function CompaniesIndex({ companies, industries, filters }) {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `twenty_crm_companies_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `freight_partners_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
+    const getPartnerBadge = (partnerType) => {
+        switch (partnerType) {
+            case 'shipping_line':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60">
+                        <Ship className="w-3 h-3 text-blue-500" />
+                        <span>خط ملاحي (Shipping Line)</span>
+                    </span>
+                );
+            case 'trucker':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60">
+                        <Truck className="w-3 h-3 text-amber-500" />
+                        <span>نقل بري (Trucker)</span>
+                    </span>
+                );
+            case 'customs_broker':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60">
+                        <ShieldCheck className="w-3 h-3 text-purple-500" />
+                        <span>مخلص جمركي (Broker)</span>
+                    </span>
+                );
+            case 'overseas_agent':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60">
+                        <Globe className="w-3 h-3 text-emerald-500" />
+                        <span>وكيل دولي (Overseas Agent)</span>
+                    </span>
+                );
+            case 'warehouse_operator':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200">
+                        <Building2 className="w-3 h-3 text-slate-500" />
+                        <span>مستودع / محطة (CFS)</span>
+                    </span>
+                );
+            case 'airline':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/60">
+                        <Plane className="w-3 h-3 text-sky-500" />
+                        <span>طيران شحن (Airline)</span>
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        <Building2 className="w-3 h-3 text-neutral-400" />
+                        <span>شريك لوجستي</span>
+                    </span>
+                );
+        }
+    };
+
     const filterOptions = [
+        {
+            key: 'partner_type',
+            label: t('partner_category') || 'Partner Category',
+            options: [
+                { value: 'shipping_line', label: 'الخطوط الملاحية (Shipping Lines)' },
+                { value: 'trucker', label: 'شركات النقل البري (Truckers)' },
+                { value: 'customs_broker', label: 'المخلصين الجمركيين (Brokers)' },
+                { value: 'overseas_agent', label: 'الوكلاء الدوليين (Overseas Agents)' },
+                { value: 'warehouse_operator', label: 'المستودعات والمحطات (CFS / Yards)' },
+                { value: 'airline', label: 'شركات الشحن الجوي (Airlines)' },
+            ],
+        },
         {
             key: 'industry',
             label: t('industry'),
@@ -114,11 +206,57 @@ export default function CompaniesIndex({ companies, industries, filters }) {
     const cellPadding = density === 'compact' ? 'py-1.5 px-3' : 'py-2.5 px-4';
 
     return (
-        <AppLayout title={t('companies')}>
-            <Head title={`${t('companies')} - Twenty CRM`} />
+        <AppLayout title={t('companies') || 'الشركاء والخطوط الملاحية'}>
+            <Head title={`${t('companies') || 'الشركاء والخطوط الملاحية'} - Freight CRM`} />
 
             <div className="flex flex-col h-full">
                 
+                {/* Partner Segment Tabs Header */}
+                <div className="px-6 pt-3 bg-neutral-50/70 dark:bg-[#161616]/70 border-b border-neutral-200/70 dark:border-neutral-800/80 flex items-center justify-between gap-4 shrink-0 overflow-x-auto">
+                    <div className="flex items-center gap-2 pb-2">
+                        {[
+                            { key: '', label: 'كافة الشركاء (All)', icon: Building2, count: partnerTypeCounts?.all || companies.length },
+                            { key: 'shipping_line', label: 'الخطوط الملاحية (Shipping Lines)', icon: Ship, count: partnerTypeCounts?.shipping_line || 0 },
+                            { key: 'trucker', label: 'شركات النقل البري (Truckers)', icon: Truck, count: partnerTypeCounts?.trucker || 0 },
+                            { key: 'customs_broker', label: 'المخلصين الجمركيين (Brokers)', icon: ShieldCheck, count: partnerTypeCounts?.customs_broker || 0 },
+                            { key: 'overseas_agent', label: 'الوكلاء الدوليين (Agents)', icon: Globe, count: partnerTypeCounts?.overseas_agent || 0 },
+                            { key: 'warehouse_operator', label: 'المستودعات والموانئ الجافة (CFS)', icon: Building2, count: partnerTypeCounts?.warehouse_operator || 0 },
+                            { key: 'airline', label: 'الشحن الجوي (Airlines)', icon: Plane, count: partnerTypeCounts?.airline || 0 },
+                        ].map((tab) => {
+                            const TabIcon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => handleSelectTypeTab(tab.key)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                                        activePartnerType === tab.key
+                                            ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 shadow-2xs'
+                                            : 'bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border border-neutral-200/70 dark:border-neutral-800'
+                                    }`}
+                                >
+                                    <TabIcon className="w-3.5 h-3.5 opacity-70" />
+                                    <span>{tab.label}</span>
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                                        activePartnerType === tab.key
+                                            ? 'bg-neutral-800 text-neutral-300 dark:bg-neutral-200 dark:text-neutral-800'
+                                            : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
+                                    }`}>
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <button
+                        onClick={() => setCreateModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 mb-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-sm shrink-0 cursor-pointer"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>{t('new_company') || 'إضافة خط ملاحي / شريك'}</span>
+                    </button>
+                </div>
+
                 {/* Advanced FilterBar */}
                 <div className="flex items-center justify-between border-b border-neutral-200/70 dark:border-white/[0.08] glass-header pe-6 sticky top-0 z-20">
                     <div className="flex-1">
@@ -130,20 +268,12 @@ export default function CompaniesIndex({ companies, industries, filters }) {
                             onFilterChange={handleFilterChange}
                             onClearFilters={handleClearFilters}
                             totalCount={companies.length}
-                            unit={t('companies')}
+                            unit={t('companies') || 'شريك'}
                             density={density}
                             onToggleDensity={setDensity}
                             onExportCsv={handleExportCsv}
                         />
                     </div>
-
-                    <button
-                        onClick={() => setCreateModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-colors shadow-2xs shrink-0 cursor-pointer"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>{t('new_company')}</span>
-                    </button>
                 </div>
 
                 {/* Spreadsheet Table */}
@@ -159,13 +289,27 @@ export default function CompaniesIndex({ companies, industries, filters }) {
                                         className="rounded border-neutral-300 dark:border-neutral-700 text-neutral-900 focus:ring-0 cursor-pointer"
                                     />
                                 </th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('company_name')}</th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('domain')}</th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('industry')}</th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('employees')}</th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('annual_revenue')}</th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('city')}</th>
-                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">{t('country')}</th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start min-w-[200px]">
+                                    الخط الملاحي / الشريك (Partner)
+                                </th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start min-w-[150px]">
+                                    تصنيف النشاط (Category)
+                                </th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start min-w-[140px]">
+                                    مسؤول الاتصال (Contact)
+                                </th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start min-w-[160px]">
+                                    الهاتف والبريد (Phone & Email)
+                                </th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start min-w-[130px]">
+                                    السجل / الضريبي (Tax ID)
+                                </th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start min-w-[120px]">
+                                    المقر / الميناء (Location)
+                                </th>
+                                <th className="py-2.5 px-4 border-e border-neutral-200/50 dark:border-neutral-800/50 text-start">
+                                    الموقع (Website)
+                                </th>
                                 <th className="py-2 px-2 w-8 text-center"></th>
                             </tr>
                         </thead>
@@ -197,77 +341,113 @@ export default function CompaniesIndex({ companies, industries, filters }) {
                                             />
                                         </td>
 
-                                        {/* Company Name */}
+                                        {/* Company Name & SCAC Code */}
                                         <td className={`${cellPadding} font-medium border-e border-neutral-100 dark:border-neutral-800/50`}>
                                             <div className="flex items-center gap-2.5">
-                                                <div className="w-6 h-6 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 flex items-center justify-center text-[10px] font-bold shrink-0">
-                                                    {company.name[0]}
+                                                <div className="w-7 h-7 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 flex items-center justify-center text-[11px] font-bold shrink-0">
+                                                    {company.name?.[0] || 'P'}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <EditableCell
-                                                        value={company.name}
-                                                        onSave={(val) => handleSaveCell(company.id, 'name', val)}
-                                                        className="font-semibold text-neutral-900 dark:text-neutral-100"
-                                                    />
+                                                    <div className="flex items-center gap-2">
+                                                        <EditableCell
+                                                            value={company.name}
+                                                            onSave={(val) => handleSaveCell(company.id, 'name', val)}
+                                                            className="font-bold text-neutral-900 dark:text-neutral-100"
+                                                        />
+                                                        {company.code && (
+                                                            <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-mono text-[10px] font-bold uppercase tracking-wider shrink-0 border border-blue-200 dark:border-blue-900">
+                                                                {company.code}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {/* Domain (Inline Editable) */}
+                                        {/* Partner Type Badge */}
+                                        <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50`}>
+                                            {getPartnerBadge(company.partner_type)}
+                                        </td>
+
+                                        {/* Contact Person */}
                                         <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50`}>
                                             <EditableCell
-                                                value={company.domain}
-                                                onSave={(val) => handleSaveCell(company.id, 'domain', val)}
-                                                placeholder={t('domain')}
+                                                value={company.contact_person}
+                                                onSave={(val) => handleSaveCell(company.id, 'contact_person', val)}
+                                                placeholder="مسؤول الاتصال..."
                                             />
                                         </td>
 
-                                        {/* Industry (Inline Editable) */}
+                                        {/* Phone & Email */}
                                         <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50`}>
+                                            <div className="space-y-0.5">
+                                                {company.phone ? (
+                                                    <div className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 text-[11px] font-mono">
+                                                        <Phone className="w-3 h-3 text-neutral-400" />
+                                                        <EditableCell
+                                                            value={company.phone}
+                                                            onSave={(val) => handleSaveCell(company.id, 'phone', val)}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-neutral-400 text-[11px] italic">
+                                                        <EditableCell
+                                                            value={company.phone}
+                                                            onSave={(val) => handleSaveCell(company.id, 'phone', val)}
+                                                            placeholder="الهاتف..."
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {company.email && (
+                                                    <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 text-[11px]">
+                                                        <Mail className="w-3 h-3 text-neutral-400" />
+                                                        <EditableCell
+                                                            value={company.email}
+                                                            onSave={(val) => handleSaveCell(company.id, 'email', val)}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+
+                                        {/* Tax / Commercial Reg Number */}
+                                        <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50 font-mono text-[11px]`}>
                                             <EditableCell
-                                                value={company.industry}
-                                                onSave={(val) => handleSaveCell(company.id, 'industry', val)}
-                                                placeholder={t('industry')}
+                                                value={company.tax_number}
+                                                onSave={(val) => handleSaveCell(company.id, 'tax_number', val)}
+                                                placeholder="السجل / الرقم الضريبي..."
                                             />
                                         </td>
 
-                                        {/* Employees Count (Inline Editable) */}
-                                        <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50`}>
-                                            <EditableCell
-                                                type="number"
-                                                value={company.employees_count}
-                                                onSave={(val) => handleSaveCell(company.id, 'employees_count', val)}
-                                                placeholder={t('employees')}
-                                            />
+                                        {/* Location */}
+                                        <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50 text-neutral-600 dark:text-neutral-400`}>
+                                            <div className="flex items-center gap-1">
+                                                <MapPin className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                <span>{[company.city, company.country].filter(Boolean).join(', ') || '—'}</span>
+                                            </div>
                                         </td>
 
-                                        {/* Annual Revenue (Inline Editable) */}
-                                        <td className={`${cellPadding} font-medium text-emerald-600 dark:text-emerald-400 border-e border-neutral-100 dark:border-neutral-800/50 font-mono`}>
-                                            <EditableCell
-                                                type="number"
-                                                prefix="$"
-                                                value={company.annual_revenue}
-                                                onSave={(val) => handleSaveCell(company.id, 'annual_revenue', val)}
-                                                placeholder={t('annual_revenue')}
-                                            />
-                                        </td>
-
-                                        {/* City (Inline Editable) */}
+                                        {/* Website / Domain */}
                                         <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50`}>
-                                            <EditableCell
-                                                value={company.city}
-                                                onSave={(val) => handleSaveCell(company.id, 'city', val)}
-                                                placeholder={t('city')}
-                                            />
-                                        </td>
-
-                                        {/* Country (Inline Editable) */}
-                                        <td className={`${cellPadding} border-e border-neutral-100 dark:border-neutral-800/50`}>
-                                            <EditableCell
-                                                value={company.country}
-                                                onSave={(val) => handleSaveCell(company.id, 'country', val)}
-                                                placeholder={t('country')}
-                                            />
+                                            {company.domain || company.website_url ? (
+                                                <a 
+                                                    href={company.website_url || `https://${company.domain}`} 
+                                                    target="_blank" 
+                                                    rel="noreferrer" 
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                                                >
+                                                    <span>{company.domain || 'موقع الويب'}</span>
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            ) : (
+                                                <EditableCell
+                                                    value={company.domain}
+                                                    onSave={(val) => handleSaveCell(company.id, 'domain', val)}
+                                                    placeholder="النطاق / الموقع..."
+                                                />
+                                            )}
                                         </td>
 
                                         {/* Delete */}
@@ -275,7 +455,7 @@ export default function CompaniesIndex({ companies, industries, filters }) {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (confirm(t('delete_confirm'))) router.delete(`/companies/${company.id}`);
+                                                    if (confirm(t('delete_confirm') || 'هل أنت متأكد من الحذف؟')) router.delete(`/companies/${company.id}`);
                                                 }}
                                                 className="p-1 text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                                 title={t('delete')}
@@ -290,7 +470,7 @@ export default function CompaniesIndex({ companies, industries, filters }) {
                             {companies.length === 0 && (
                                 <tr>
                                     <td colSpan={9} className="py-16 text-center text-xs text-neutral-400">
-                                        {t('no_records_match')}
+                                        لا توجد خطوط ملاحية أو شركاء مطابقين للبحث
                                     </td>
                                 </tr>
                             )}
@@ -315,7 +495,7 @@ export default function CompaniesIndex({ companies, industries, filters }) {
                 record={selectedCompany}
             />
 
-            {/* Dedicated Company Creation Modal */}
+            {/* Dedicated Company / Carrier Creation Modal */}
             <CreateCompanyModal
                 isOpen={createModalOpen}
                 onClose={() => setCreateModalOpen(false)}
@@ -323,4 +503,3 @@ export default function CompaniesIndex({ companies, industries, filters }) {
         </AppLayout>
     );
 }
-

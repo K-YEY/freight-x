@@ -4,6 +4,7 @@ import AppLayout from '../../Components/AppLayout';
 import CreateInvoiceModal from '../../Components/Modals/CreateInvoiceModal';
 import InvoiceDrawer from '../../Components/InvoiceDrawer';
 import { useTranslation } from '../../Context/LanguageContext';
+import { useCurrency } from '../../Context/CurrencyContext';
 import { 
     Receipt, Plus, Search, Filter, ArrowUpRight, ArrowDownLeft, 
     TrendingUp, AlertCircle, CheckCircle2, Clock, Ban, DollarSign, 
@@ -18,6 +19,7 @@ export default function BillingIndex({
     metrics = {} 
 }) {
     const { t, isRTL } = useTranslation();
+    const { formatMoney, currentCurrency } = useCurrency();
 
     const [activeTab, setActiveTab] = useState(filters.type || 'all');
     const [search, setSearch] = useState(filters.search || '');
@@ -197,12 +199,12 @@ export default function BillingIndex({
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className="text-xl font-bold text-neutral-900 dark:text-white font-mono">
-                                ${(metrics.totalReceivables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {formatMoney(metrics.totalReceivables || 0, 'USD', currentCurrency)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-1 border-t border-neutral-100 dark:border-neutral-850">
-                            <span>Collected: ${(metrics.totalCollected || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                            <span className="text-amber-600 dark:text-amber-400 font-medium">Due: ${(metrics.totalOutstandingReceivable || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            <span>Collected: {formatMoney(metrics.totalCollected || 0, 'USD', currentCurrency, { showCode: false })}</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-medium">Due: {formatMoney(metrics.totalOutstandingReceivable || 0, 'USD', currentCurrency, { showCode: false })}</span>
                         </div>
                     </div>
 
@@ -218,12 +220,12 @@ export default function BillingIndex({
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className="text-xl font-bold text-neutral-900 dark:text-white font-mono">
-                                ${(metrics.totalPayables || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {formatMoney(metrics.totalPayables || 0, 'USD', currentCurrency)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-1 border-t border-neutral-100 dark:border-neutral-850">
-                            <span>Paid Out: ${(metrics.totalPaidOut || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                            <span className="text-rose-600 dark:text-rose-400 font-medium">Due: ${(metrics.totalOutstandingPayable || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            <span>Paid Out: {formatMoney(metrics.totalPaidOut || 0, 'USD', currentCurrency, { showCode: false })}</span>
+                            <span className="text-rose-600 dark:text-rose-400 font-medium">Due: {formatMoney(metrics.totalOutstandingPayable || 0, 'USD', currentCurrency, { showCode: false })}</span>
                         </div>
                     </div>
 
@@ -241,7 +243,7 @@ export default function BillingIndex({
                             <span className={`text-xl font-bold font-mono ${
                                 (metrics.netProfit || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                             }`}>
-                                ${(metrics.netProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {formatMoney(metrics.netProfit || 0, 'USD', currentCurrency)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-1 border-t border-neutral-100 dark:border-neutral-850">
@@ -270,7 +272,7 @@ export default function BillingIndex({
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 pt-1 border-t border-neutral-100 dark:border-neutral-850">
                             <span>AR Outstanding:</span>
-                            <span className="font-mono text-neutral-900 dark:text-white">${(metrics.totalOutstandingReceivable || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            <span className="font-mono text-neutral-900 dark:text-white">{formatMoney(metrics.totalOutstandingReceivable || 0, 'USD', currentCurrency, { showCode: false })}</span>
                         </div>
                     </div>
                 </div>
@@ -376,9 +378,9 @@ export default function BillingIndex({
                                     <th className="py-3 px-3 text-start">{t('linked_shipment')}</th>
                                     <th className="py-3 px-3 text-start">{t('invoice_category')}</th>
                                     <th className="py-3 px-3 text-start">{t('due_date')}</th>
-                                    <th className="py-3 px-3 text-end">{t('total_due')} ($)</th>
-                                    <th className="py-3 px-3 text-end">{t('paid_amount')} ($)</th>
-                                    <th className="py-3 px-3 text-end">{t('balance_due')} ($)</th>
+                                    <th className="py-3 px-3 text-end">{t('total_due')} ({currentCurrency})</th>
+                                    <th className="py-3 px-3 text-end">{t('paid_amount')} ({currentCurrency})</th>
+                                    <th className="py-3 px-3 text-end">{t('balance_due')} ({currentCurrency})</th>
                                     <th className="py-3 px-3 text-center">{t('status')}</th>
                                     <th className="py-3 px-3 text-center w-20"></th>
                                 </tr>
@@ -446,19 +448,19 @@ export default function BillingIndex({
 
                                                 {/* Total Due */}
                                                 <td className="py-3 px-3 text-end font-mono font-semibold text-neutral-900 dark:text-white">
-                                                    ${parseFloat(invoice.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    {formatMoney(invoice.total_amount, invoice.currency || 'USD', currentCurrency, { showCode: false })}
                                                 </td>
 
                                                 {/* Paid Amount */}
                                                 <td className="py-3 px-3 text-end font-mono text-emerald-600 dark:text-emerald-400">
-                                                    ${parseFloat(invoice.paid_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    {formatMoney(invoice.paid_amount, invoice.currency || 'USD', currentCurrency, { showCode: false })}
                                                 </td>
 
                                                 {/* Balance Due */}
                                                 <td className={`py-3 px-3 text-end font-mono font-semibold ${
                                                     parseFloat(invoice.balance_due) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-neutral-400'
                                                 }`}>
-                                                    ${parseFloat(invoice.balance_due).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    {formatMoney(invoice.balance_due, invoice.currency || 'USD', currentCurrency, { showCode: false })}
                                                 </td>
 
                                                 {/* Status Badge */}

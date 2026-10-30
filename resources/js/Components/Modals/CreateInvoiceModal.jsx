@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { X, Receipt, Plus, Trash2, ArrowUpRight, ArrowDownLeft, Building2, Ship, Calendar, Percent, DollarSign } from 'lucide-react';
 import { useTranslation } from '../../Context/LanguageContext';
+import { useCurrency } from '../../Context/CurrencyContext';
 
 export default function CreateInvoiceModal({ 
     isOpen, 
@@ -15,6 +16,7 @@ export default function CreateInvoiceModal({
     if (!isOpen) return null;
 
     const { t, isRTL } = useTranslation();
+    const { currencies, currentCurrency } = useCurrency();
     const [submitting, setSubmitting] = useState(false);
 
     const [type, setType] = useState(defaultType); // 'receivable' | 'payable'
@@ -26,7 +28,7 @@ export default function CreateInvoiceModal({
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     );
     const [paymentTerms, setPaymentTerms] = useState('Net 30 Days');
-    const [currency, setCurrency] = useState('USD');
+    const [currency, setCurrency] = useState(currentCurrency || 'USD');
     const [discountAmount, setDiscountAmount] = useState('0');
     const [notes, setNotes] = useState('');
 
@@ -311,6 +313,25 @@ export default function CreateInvoiceModal({
                                 placeholder="Net 30, COD, Due Upon Receipt..."
                                 className="w-full px-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:focus:ring-neutral-600"
                             />
+                        </div>
+
+                        {/* Invoice Currency */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center justify-between">
+                                <span>{t('currency') || 'Currency'}</span>
+                                <span className="text-[10px] text-neutral-400 font-mono">({currency})</span>
+                            </label>
+                            <select
+                                value={currency}
+                                onChange={(e) => setCurrency(e.target.value)}
+                                className="w-full px-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:focus:ring-neutral-600 font-medium"
+                            >
+                                {currencies.map((c) => (
+                                    <option key={c.code} value={c.code}>
+                                        {c.flag} {c.code} - {isRTL ? c.name_ar : c.name_en} ({c.symbol})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

@@ -4,6 +4,7 @@ import AppLayout from '../Components/AppLayout';
 import StatusBadge from '../Components/StatusBadge';
 import RecordDrawer from '../Components/RecordDrawer';
 import { useTranslation } from '../Context/LanguageContext';
+import { useCurrency } from '../Context/CurrencyContext';
 import { 
     DollarSign, Users, Building2, Briefcase, CheckSquare, 
     ArrowUpRight, Clock, Activity, CheckCircle2, Circle, 
@@ -12,6 +13,7 @@ import {
 
 export default function Dashboard({ stats, stages, recentActivities, upcomingTasks, topOpportunities, recentShipments = [] }) {
     const { t, locale, isRTL } = useTranslation();
+    const { formatMoney, currentCurrency } = useCurrency();
     const [drawerState, setDrawerState] = useState({ isOpen: false, type: 'opportunity', record: null });
 
     const handleToggleTask = (taskId) => {
@@ -84,14 +86,14 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                         <div className="text-end">
                             <div className="text-[10px] text-neutral-400 uppercase font-sans">{t('freight_revenue') || 'Freight Invoiced'}</div>
                             <div className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-                                ${(stats.freightRevenue || 0).toLocaleString()}
+                                {formatMoney(stats.freightRevenue || 0, 'USD', currentCurrency, { showCode: false })}
                             </div>
                         </div>
                         <div className="h-8 w-px bg-neutral-200 dark:bg-neutral-800"></div>
                         <div className="text-end">
                             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase font-sans font-semibold">{t('gross_profit')}</div>
                             <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
-                                +${(stats.freightProfit || 0).toLocaleString()}
+                                +{formatMoney(stats.freightProfit || 0, 'USD', currentCurrency, { showCode: false })}
                             </div>
                         </div>
                     </div>
@@ -105,7 +107,7 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                             <Briefcase className="w-4 h-4 text-neutral-400" />
                         </div>
                         <div className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                            ${stats.totalPipeline.toLocaleString()}
+                            {formatMoney(stats.totalPipeline || 0, 'USD', currentCurrency, { showCode: false })}
                         </div>
                         <span className="text-[11px] text-neutral-400 flex items-center">
                             {t('open_deals_desc')}
@@ -118,7 +120,7 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                             <DollarSign className="w-4 h-4 text-emerald-500" />
                         </div>
                         <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                            ${stats.wonRevenue.toLocaleString()}
+                            {formatMoney(stats.wonRevenue || 0, 'USD', currentCurrency, { showCode: false })}
                         </div>
                         <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 flex items-center">
                             {t('closed_won_desc')}
@@ -172,8 +174,8 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                                     <div className="text-[11px] font-medium text-neutral-500 capitalize">
                                         {t(stageKey) || stage.label}
                                     </div>
-                                    <div className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-                                        ${Number(stage.amount).toLocaleString()}
+                                    <div className="text-base font-bold text-neutral-900 dark:text-neutral-100 font-mono">
+                                        {formatMoney(stage.amount || 0, 'USD', currentCurrency, { showCode: false })}
                                     </div>
                                     <div className="text-[10px] text-neutral-400">
                                         {stage.count} {stage.count === 1 ? t('deal') : t('deals')}
@@ -215,8 +217,8 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                                         </div>
                                     </div>
                                     <div className="text-end shrink-0">
-                                        <div className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
-                                            ${Number(opp.amount).toLocaleString()}
+                                        <div className="text-xs font-bold text-neutral-900 dark:text-neutral-100 font-mono">
+                                            {formatMoney(opp.amount || 0, 'USD', currentCurrency)}
                                         </div>
                                         <div className="mt-0.5">
                                             <StatusBadge type="stage" value={opp.stage} />
@@ -312,7 +314,7 @@ export default function Dashboard({ stats, stages, recentActivities, upcomingTas
                                     <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-1 border-t border-neutral-200/50 dark:border-neutral-800/60">
                                         <span className="truncate max-w-[60%]">{shp.customer?.name}</span>
                                         <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                            +${Number(shp.gross_profit || 0).toLocaleString()}
+                                            +{formatMoney(shp.gross_profit || 0, shp.currency || 'USD', currentCurrency)}
                                         </span>
                                     </div>
                                 </Link>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { 
     LayoutDashboard, Users, Building2, Briefcase, CheckSquare, 
-    Search, Moon, Sun, Plus, ChevronRight, ChevronDown, User, Languages, Ship, Layers, Receipt
+    Search, Moon, Sun, Plus, ChevronRight, ChevronDown, User, Languages, Ship, Layers, Receipt, FileText,
+    LogOut, Wallet, Shield, Banknote
 } from 'lucide-react';
 import { useTranslation } from '../Context/LanguageContext';
 import CommandPalette from './CommandPalette';
@@ -12,9 +13,10 @@ import CreateCompanyModal from './Modals/CreateCompanyModal';
 import CreateDealModal from './Modals/CreateDealModal';
 import CreateTaskModal from './Modals/CreateTaskModal';
 import CreateShipmentModal from './Modals/CreateShipmentModal';
+import CurrencySwitcher from './CurrencySwitcher';
 
 export default function AppLayout({ children, title, companies = [], contacts = [], opportunities = [], ports = [], carriers = [], clients = [] }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
     const { t, locale, toggleLocale, isRTL } = useTranslation();
     const [darkMode, setDarkMode] = useState(false);
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -139,12 +141,19 @@ export default function AppLayout({ children, title, companies = [], contacts = 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    const authUser = props?.auth?.user;
+    const userRole = authUser?.roles?.[0]?.display_name_ar || authUser?.roles?.[0]?.name || 'مسؤول';
+
     const navItems = [
         { name: t('dashboard'), href: '/', icon: LayoutDashboard, active: url === '/' || url === '/dashboard' },
+        { name: t('quotations'), href: '/quotations', icon: FileText, active: url.startsWith('/quotations') },
         { name: t('shipments'), href: '/shipments', icon: Ship, active: url.startsWith('/shipments') },
         { name: t('billing'), href: '/billing', icon: Receipt, active: url.startsWith('/billing') },
+        { name: t('employees'), href: '/employees', icon: Users, active: url.startsWith('/employees') },
+        { name: t('employee_accounts'), href: '/employee-accounts', icon: Wallet, active: url.startsWith('/employee-accounts') },
+        { name: t('office_expenses'), href: '/office-expenses', icon: Banknote, active: url.startsWith('/office-expenses') },
         { name: t('master_data'), href: '/master-data', icon: Layers, active: url.startsWith('/master-data') },
-        { name: t('people'), href: '/contacts', icon: Users, active: url.startsWith('/contacts') },
+        { name: t('people'), href: '/contacts', icon: User, active: url.startsWith('/contacts') },
         { name: t('companies'), href: '/companies', icon: Building2, active: url.startsWith('/companies') },
         { name: t('opportunities'), href: '/opportunities', icon: Briefcase, active: url.startsWith('/opportunities') },
         { name: t('tasks'), href: '/tasks', icon: CheckSquare, active: url.startsWith('/tasks') },
@@ -266,18 +275,29 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-neutral-200/40 dark:bg-neutral-900/50 border border-transparent hover:border-neutral-300 dark:hover:border-neutral-800 transition-colors">
-                        <div className="w-6 h-6 rounded-full bg-neutral-800 dark:bg-neutral-200 text-white dark:text-neutral-900 flex items-center justify-center text-[10px] font-bold shrink-0">
-                            AR
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-neutral-200/50 dark:bg-neutral-900/60 border border-neutral-300/60 dark:border-neutral-800 transition-colors">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-2xs">
+                                {authUser?.name ? authUser.name.split(' ').map(n => n[0]).slice(0, 2).join('') : 'AR'}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 truncate">
+                                    {authUser?.name || 'Alex Rivera'}
+                                </span>
+                                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold truncate">
+                                    {userRole}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-medium text-neutral-900 dark:text-neutral-100 truncate">
-                                Alex Rivera
-                            </span>
-                            <span className="text-[10px] text-neutral-400 truncate">
-                                alex@twenty.local
-                            </span>
-                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => router.post('/logout')}
+                            className="p-1.5 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer shrink-0"
+                            title="تسجيل الخروج من النظام"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -295,8 +315,12 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                         </span>
                     </div>
 
-                    {/* New Record Split Button */}
-                    <div className="relative" ref={dropdownRef}>
+                    {/* Header Controls: Live Currency Switcher & New Record */}
+                    <div className="flex items-center gap-2.5">
+                        <CurrencySwitcher />
+
+                        {/* New Record Split Button */}
+                        <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-colors shadow-2xs cursor-pointer"
@@ -351,10 +375,35 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                                     <Receipt className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                     <span>{t('new_invoice')}</span>
                                 </Link>
+                                <Link
+                                    href="/employees"
+                                    onClick={() => setCreateDropdownOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
+                                >
+                                    <Users className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                    <span>{locale === 'ar' ? 'إدارة الموظفين والكوادر' : 'Employees Management'}</span>
+                                </Link>
+                                <Link
+                                    href="/employee-accounts"
+                                    onClick={() => setCreateDropdownOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
+                                >
+                                    <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                    <span>{locale === 'ar' ? 'سند صرف / حسابات موظفين' : 'Employee Accounts & Payroll'}</span>
+                                </Link>
+                                <Link
+                                    href="/office-expenses"
+                                    onClick={() => setCreateDropdownOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
+                                >
+                                    <Banknote className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                    <span>{locale === 'ar' ? 'تسجيل مصاريف المكتب' : 'Office Expenses'}</span>
+                                </Link>
                             </div>
                         )}
                     </div>
-                </header>
+                </div>
+            </header>
 
                 {/* Page Content */}
                 <div className="flex-1 overflow-y-auto">

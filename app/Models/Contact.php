@@ -15,19 +15,31 @@ class Contact extends Model
     protected $fillable = [
         'first_name',
         'last_name',
+        'company_name',
+        'customer_type',
         'email',
         'phone',
+        'tax_id',
+        'commercial_registry',
+        'customs_card_number',
+        'nafeza_id',
         'job_title',
         'city',
+        'billing_address',
+        'country',
         'avatar_url',
         'company_id',
         'status',
+        'payment_terms',
+        'credit_limit',
+        'notes',
         'tags',
         'linkedin_url',
     ];
 
     protected $casts = [
         'tags' => 'array',
+        'credit_limit' => 'decimal:2',
     ];
 
     protected $appends = ['name'];

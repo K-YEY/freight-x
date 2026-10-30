@@ -42,7 +42,12 @@ class ShipmentController extends Controller
             'vessel:id,name,imo_number',
             'customsBroker:id,name',
             'trucker:id,name',
+            'overseasAgent:id,name,code,partner_type,country',
+            'financialClosedBy:id,name',
             'containers',
+            'documents',
+            'truckDispatches.truckingCompany:id,name',
+            'truckDispatches.container:id,container_number',
             'milestones' => fn ($mq) => $mq->orderBy('planned_date'),
             'invoices.partner:id,name,partner_type',
             'invoices.items',
@@ -148,6 +153,7 @@ class ShipmentController extends Controller
         $clients = $companies->filter(fn ($c) => in_array($c->partner_type, ['customer', 'supplier', null]))->values();
         $customsBrokers = $companies->filter(fn ($c) => $c->partner_type === 'customs_broker')->values();
         $truckers = $companies->filter(fn ($c) => $c->partner_type === 'trucker')->values();
+        $agents = $companies->filter(fn ($c) => in_array($c->partner_type, ['forwarder', 'agent']))->values();
 
         return Inertia::render('Shipments/Index', [
             'shipments' => $shipments,
@@ -162,6 +168,7 @@ class ShipmentController extends Controller
             'clients' => $clients,
             'customsBrokers' => $customsBrokers,
             'truckers' => $truckers,
+            'agents' => $agents,
             'currentView' => $currentView,
             'filters' => [
                 'search' => $search ?? '',
@@ -503,5 +510,246 @@ class ShipmentController extends Controller
         $invoice->shipment?->recalculateFinancials();
 
         return redirect()->back()->with('success', 'Invoice status updated');
+    }
+
+    /**
+     * Update Bill of Lading (B/L) information for a shipment
+     */
+    public function updateBl(Request $request, Shipment $shipment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'hbl_number' => 'nullable|string|max:50',
+            'mbl_number' => 'nullable|string|max:50',
+            'bl_type' => 'required|string|in:house,master,direct,sea_waybill',
+            'freight_term' => 'required|string|in:Prepaid,Collect',
+            'shipper_name' => 'nullable|string|max:255',
+            'shipper_address' => 'nullable|string',
+            'consignee_name' => 'nullable|string|max:255',
+            'consignee_address' => 'nullable|string',
+            'notify_party_name' => 'nullable|string|max:255',
+            'notify_party_address' => 'nullable|string',
+            'place_of_receipt' => 'nullable|string|max:255',
+            'place_of_delivery' => 'nullable|string|max:255',
+            'bl_issue_place' => 'nullable|string|max:255',
+            'bl_issue_date' => 'nullable|date',
+            'marks_and_numbers' => 'nullable|string',
+            'cargo_description' => 'nullable|string',
+        ]);
+
+        $shipment->update($validated);
+
+        return redirect()->back()->with('success', 'Bill of Lading details updated successfully.');
+    }
+
+    /**
+     * Display printable House Bill of Lading (HBL)
+     */
+    public function billOfLading(Shipment $shipment): Response
+    {
+        $shipment->load([
+            'customer',
+            'carrier',
+            'originPort',
+            'destinationPort',
+            'vessel',
+            'containers',
+        ]);
+
+        return Inertia::render('Shipments/BillOfLading', [
+            'shipment' => $shipment,
+        ]);
+    }
+
+    /**
+     * Update container discharge, gate-out, and empty-return tracking dates
+     */
+    public function updateContainerTracking(Request $request, ShipmentContainer $container): RedirectResponse
+    {
+        $validated = $request->validate([
+            'discharged_at' => 'nullable|date',
+            'gate_out_at' => 'nullable|date',
+            'empty_returned_at' => 'nullable|date',
+        ]);
+
+        $container->update($validated);
+        $container->calculateDemurrageAndDetention();
+
+        return redirect()->back()->with('success', "Container {$container->container_number} tracking updated.");
+    }
+
+    /**
+     * Update shipment free days and demurrage daily rates
+     */
+    public function updateFreeTime(Request $request, Shipment $shipment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'demurrage_free_days' => 'required|integer|min:0',
+            'detention_free_days' => 'required|integer|min:0',
+            'demurrage_daily_rate' => 'required|numeric|min:0',
+            'detention_daily_rate' => 'required|numeric|min:0',
+        ]);
+
+        $shipment->update($validated);
+
+        // Recalculate demurrage for all containers
+        foreach ($shipment->containers as $container) {
+            $container->calculateDemurrageAndDetention();
+        }
+
+        return redirect()->back()->with('success', 'Demurrage and detention terms updated.');
+    }
+
+    /**
+     * Update customs clearance details (ACID, Bayan, Stage, Duties/Taxes, D/O)
+     */
+    public function updateCustoms(Request $request, Shipment $shipment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'acid_number' => 'nullable|string|max:50',
+            'bayan_number' => 'nullable|string|max:50',
+            'customs_office' => 'nullable|string|max:100',
+            'customs_stage' => 'nullable|string|max:40',
+            'customs_duty_amount' => 'nullable|numeric|min:0',
+            'customs_vat_amount' => 'nullable|numeric|min:0',
+            'customs_fees_amount' => 'nullable|numeric|min:0',
+            'customs_assessment_date' => 'nullable|date',
+            'customs_payment_date' => 'nullable|date',
+            'delivery_order_number' => 'nullable|string|max:50',
+            'delivery_order_date' => 'nullable|date',
+            'delivery_order_status' => 'nullable|string|max:30',
+            'customs_broker_id' => 'nullable|exists:companies,id',
+        ]);
+
+        if (($validated['customs_stage'] ?? null) === 'customs_cleared' && ! $shipment->customs_cleared_date) {
+            $validated['customs_cleared_date'] = Carbon::now()->toDateString();
+        }
+
+        $shipment->update($validated);
+        $shipment->recalculateFinancials();
+
+        return redirect()->back()->with('success', 'Customs clearance & D/O details updated.');
+    }
+
+    /**
+     * Update overseas partner agent profit share & generate Debit/Credit note
+     */
+    public function updateAgentSettlement(Request $request, Shipment $shipment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'overseas_agent_id' => 'nullable|exists:companies,id',
+            'agent_share_type' => 'required|string|in:none,fifty_fifty,percentage,fixed_amount',
+            'agent_share_percentage' => 'nullable|numeric|min:0|max:100',
+            'agent_profit_share_amount' => 'nullable|numeric|min:0',
+            'agent_debit_credit_type' => 'required|string|in:debit,credit',
+            'agent_settlement_status' => 'required|string|in:pending,issued,settled',
+            'agent_settlement_reference' => 'nullable|string|max:50',
+            'generate_invoice' => 'nullable|boolean',
+        ]);
+
+        $shareType = $validated['agent_share_type'];
+        $sharePercent = (float) ($validated['agent_share_percentage'] ?? 50.0);
+        $shareAmount = (float) ($validated['agent_profit_share_amount'] ?? 0);
+
+        if ($shareType === 'fifty_fifty') {
+            $sharePercent = 50.0;
+            $shareAmount = max(0, round($shipment->gross_profit * 0.50, 2));
+        } elseif ($shareType === 'percentage') {
+            $shareAmount = max(0, round($shipment->gross_profit * ($sharePercent / 100), 2));
+        }
+
+        $shipment->update([
+            'overseas_agent_id' => $validated['overseas_agent_id'] ?? null,
+            'agent_share_type' => $shareType,
+            'agent_share_percentage' => $sharePercent,
+            'agent_profit_share_amount' => $shareAmount,
+            'agent_debit_credit_type' => $validated['agent_debit_credit_type'],
+            'agent_settlement_status' => $validated['agent_settlement_status'],
+            'agent_settlement_reference' => $validated['agent_settlement_reference'] ?? null,
+        ]);
+
+        // Automatically issue matching Debit or Credit Note Invoice if requested and agent is set
+        if (! empty($validated['generate_invoice']) && $shipment->overseas_agent_id && $shareAmount > 0) {
+            $noteType = $validated['agent_debit_credit_type'] === 'debit' ? 'debit_note' : 'credit_note';
+            $prefix = $noteType === 'debit_note' ? 'DN' : 'CN';
+            $year = date('Y');
+
+            $count = Invoice::where('type', $noteType)->count() + 1;
+            do {
+                $invNumber = sprintf('%s-%s-%04d', $prefix, $year, $count++);
+            } while (Invoice::where('invoice_number', $invNumber)->exists());
+
+            $invoice = Invoice::create([
+                'invoice_number' => $invNumber,
+                'type' => $noteType,
+                'category' => 'customer_billing',
+                'partner_id' => $shipment->overseas_agent_id,
+                'shipment_id' => $shipment->id,
+                'currency' => $shipment->currency ?? 'USD',
+                'exchange_rate' => 1.0,
+                'subtotal' => $shareAmount,
+                'tax_amount' => 0,
+                'discount_amount' => 0,
+                'total_amount' => $shareAmount,
+                'paid_amount' => 0,
+                'balance_due' => $shareAmount,
+                'status' => 'issued',
+                'issue_date' => Carbon::now()->toDateString(),
+                'due_date' => Carbon::now()->addDays(30)->toDateString(),
+                'payment_terms' => 'Net 30 Days',
+                'notes' => 'Overseas Agent Profit Share Settlement for B/L: '.($shipment->hbl_number ?? $shipment->shipment_number),
+                'created_by' => $request->user()?->id,
+            ]);
+
+            $shipment->update([
+                'agent_settlement_reference' => $invNumber,
+                'agent_settlement_status' => 'issued',
+            ]);
+        }
+
+        $shipment->recalculateFinancials();
+
+        return redirect()->back()->with('success', 'Overseas partner agent settlement updated.');
+    }
+
+    /**
+     * Lock or unlock shipment job costing (financial closure)
+     */
+    public function toggleFinancialLock(Request $request, Shipment $shipment): RedirectResponse
+    {
+        $current = $shipment->financial_status;
+        $newStatus = $current === 'closed_locked' ? 'open' : 'closed_locked';
+
+        $shipment->update([
+            'financial_status' => $newStatus,
+            'financial_closed_at' => $newStatus === 'closed_locked' ? Carbon::now() : null,
+            'financial_closed_by' => $newStatus === 'closed_locked' ? $request->user()?->id : null,
+        ]);
+
+        $message = $newStatus === 'closed_locked'
+            ? "Shipment {$shipment->shipment_number} job costing has been locked. Financial records are audited."
+            : "Shipment {$shipment->shipment_number} financials reopened for editing.";
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    /**
+     * Render Overseas Partner Agent Debit/Credit Note printable sheet
+     */
+    public function agentDebitNote(Shipment $shipment): Response
+    {
+        $shipment->load([
+            'customer',
+            'carrier',
+            'originPort',
+            'destinationPort',
+            'vessel',
+            'overseasAgent',
+            'containers',
+            'invoices.partner',
+        ]);
+
+        return Inertia::render('Shipments/AgentDebitNote', [
+            'shipment' => $shipment,
+        ]);
     }
 }

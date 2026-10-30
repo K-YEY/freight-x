@@ -8,6 +8,7 @@ import BulkActionBar from '../../Components/BulkActionBar';
 import ShipmentDrawer from '../../Components/ShipmentDrawer';
 import CreateShipmentModal from '../../Components/Modals/CreateShipmentModal';
 import { useTranslation } from '../../Context/LanguageContext';
+import { useCurrency } from '../../Context/CurrencyContext';
 import { 
     Plus, LayoutGrid, Table as TableIcon, 
     Ship, Plane, Truck, Anchor, Building2, 
@@ -21,17 +22,19 @@ export default function ShipmentsIndex({
     ports = [], 
     warehouses = [], 
     vessels = [], 
-    incoterms = [],
-    packageTypes = [],
-    moveTypes = [],
+    incoterms = [], 
+    packageTypes = [], 
+    moveTypes = [], 
     carriers = [], 
     clients = [], 
-    customsBrokers = [],
-    truckers = [],
+    customsBrokers = [], 
+    truckers = [], 
+    agents = [], 
     currentView = 'kanban', 
     filters = {} 
 }) {
     const { t, isRTL } = useTranslation();
+    const { formatMoney, currentCurrency } = useCurrency();
     const [viewMode, setViewMode] = useState(currentView || 'kanban');
     const [search, setSearch] = useState(filters.search || '');
     const [activeMode, setActiveMode] = useState(filters.mode || 'all');
@@ -299,19 +302,19 @@ export default function ShipmentsIndex({
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-100/80 dark:bg-[#181818] border border-neutral-200/60 dark:border-neutral-800">
                             <span className="text-neutral-400 font-sans text-[11px]">{t('revenue')}:</span>
                             <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                                ${totalRevenue.toLocaleString()}
+                                {formatMoney(totalRevenue, 'USD', currentCurrency)}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-100/80 dark:bg-[#181818] border border-neutral-200/60 dark:border-neutral-800">
                             <span className="text-neutral-400 font-sans text-[11px]">{t('cost')}:</span>
                             <span className="font-bold text-neutral-700 dark:text-neutral-300">
-                                ${totalCost.toLocaleString()}
+                                {formatMoney(totalCost, 'USD', currentCurrency)}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400">
                             <span className="font-sans text-[11px]">{t('gross_profit')}:</span>
                             <span className="font-bold">
-                                ${totalProfit.toLocaleString()} ({avgMargin}%)
+                                {formatMoney(totalProfit, 'USD', currentCurrency)} ({avgMargin}%)
                             </span>
                         </div>
                     </div>
@@ -394,7 +397,7 @@ export default function ShipmentsIndex({
                                             </span>
                                         </div>
                                         <div className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                            ${Number(col.totalProfit || 0).toLocaleString()}
+                                            {formatMoney(col.totalProfit || 0, 'USD', currentCurrency, { showCode: false })}
                                         </div>
                                     </div>
 
@@ -457,9 +460,9 @@ export default function ShipmentsIndex({
                                                             ETA: {shp.eta || '—'}
                                                         </span>
                                                         <div className="flex items-center gap-1 font-mono text-xs">
-                                                            <span className="text-neutral-400 text-[10px]">Rev: ${revenue.toLocaleString()}</span>
+                                                            <span className="text-neutral-400 text-[10px]">Rev: {formatMoney(revenue, 'USD', currentCurrency, { showCode: false })}</span>
                                                             <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
-                                                                +${profit.toLocaleString()}
+                                                                +{formatMoney(profit, 'USD', currentCurrency, { showCode: false })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -502,9 +505,9 @@ export default function ShipmentsIndex({
                                     <th className="py-2.5 px-4 text-start">Incoterm</th>
                                     <th className="py-2.5 px-4 text-start">ETD</th>
                                     <th className="py-2.5 px-4 text-start">ETA</th>
-                                    <th className="py-2.5 px-4 text-end">{t('revenue')}</th>
-                                    <th className="py-2.5 px-4 text-end">{t('cost')}</th>
-                                    <th className="py-2.5 px-4 text-end">{t('gross_profit')}</th>
+                                    <th className="py-2.5 px-4 text-end">{t('revenue')} ({currentCurrency})</th>
+                                    <th className="py-2.5 px-4 text-end">{t('cost')} ({currentCurrency})</th>
+                                    <th className="py-2.5 px-4 text-end">{t('gross_profit')} ({currentCurrency})</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-200/60 dark:divide-neutral-800/60">
@@ -597,15 +600,15 @@ export default function ShipmentsIndex({
                                             </td>
 
                                             <td className={`${cellPadding} text-end font-mono text-neutral-900 dark:text-neutral-100`}>
-                                                ${rev.toLocaleString()}
+                                                {formatMoney(rev, 'USD', currentCurrency, { showCode: false })}
                                             </td>
 
                                             <td className={`${cellPadding} text-end font-mono text-neutral-600 dark:text-neutral-400`}>
-                                                ${cost.toLocaleString()}
+                                                {formatMoney(cost, 'USD', currentCurrency, { showCode: false })}
                                             </td>
 
                                             <td className={`${cellPadding} text-end font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap`}>
-                                                +${profit.toLocaleString()}
+                                                +{formatMoney(profit, 'USD', currentCurrency, { showCode: false })}
                                             </td>
                                         </tr>
                                     );
@@ -648,6 +651,9 @@ export default function ShipmentsIndex({
                     ports={ports}
                     carriers={carriers}
                     clients={clients}
+                    customsBrokers={customsBrokers}
+                    truckers={truckers}
+                    agents={agents}
                 />
 
                 {/* Create Shipment Modal */}

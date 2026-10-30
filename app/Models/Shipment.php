@@ -57,6 +57,47 @@ class Shipment extends Model
         'margin_percentage',
         'created_by',
         'notes',
+        'quotation_id',
+        'bl_type',
+        'freight_term',
+        'shipper_name',
+        'shipper_address',
+        'consignee_name',
+        'consignee_address',
+        'notify_party_name',
+        'notify_party_address',
+        'place_of_receipt',
+        'place_of_delivery',
+        'bl_issue_place',
+        'bl_issue_date',
+        'marks_and_numbers',
+        'cargo_description',
+        'demurrage_free_days',
+        'detention_free_days',
+        'demurrage_daily_rate',
+        'detention_daily_rate',
+        'acid_number',
+        'bayan_number',
+        'customs_office',
+        'customs_stage',
+        'customs_duty_amount',
+        'customs_vat_amount',
+        'customs_fees_amount',
+        'customs_assessment_date',
+        'customs_payment_date',
+        'delivery_order_number',
+        'delivery_order_date',
+        'delivery_order_status',
+        'overseas_agent_id',
+        'agent_share_type',
+        'agent_share_percentage',
+        'agent_profit_share_amount',
+        'agent_debit_credit_type',
+        'agent_settlement_status',
+        'agent_settlement_reference',
+        'financial_status',
+        'financial_closed_at',
+        'financial_closed_by',
     ];
 
     protected $casts = [
@@ -68,6 +109,15 @@ class Shipment extends Model
         'ata' => 'date:Y-m-d',
         'customs_cleared_date' => 'date:Y-m-d',
         'delivery_date' => 'date:Y-m-d',
+        'bl_issue_date' => 'date:Y-m-d',
+        'customs_assessment_date' => 'date:Y-m-d',
+        'customs_payment_date' => 'date:Y-m-d',
+        'delivery_order_date' => 'date:Y-m-d',
+        'financial_closed_at' => 'datetime',
+        'demurrage_free_days' => 'integer',
+        'detention_free_days' => 'integer',
+        'demurrage_daily_rate' => 'decimal:2',
+        'detention_daily_rate' => 'decimal:2',
         'total_gross_weight_kg' => 'decimal:2',
         'total_net_weight_kg' => 'decimal:2',
         'total_volume_cbm' => 'decimal:3',
@@ -75,6 +125,15 @@ class Shipment extends Model
         'total_cost' => 'decimal:2',
         'gross_profit' => 'decimal:2',
         'margin_percentage' => 'decimal:2',
+        'customs_duty_amount' => 'decimal:2',
+        'customs_vat_amount' => 'decimal:2',
+        'customs_fees_amount' => 'decimal:2',
+        'agent_share_percentage' => 'decimal:2',
+        'agent_profit_share_amount' => 'decimal:2',
+    ];
+
+    protected $appends = [
+        'documents_checklist',
     ];
 
     /**
@@ -190,6 +249,22 @@ class Shipment extends Model
     }
 
     /**
+     * @return BelongsTo<Quotation, $this>
+     */
+    public function quotation(): BelongsTo
+    {
+        return $this->belongsTo(Quotation::class);
+    }
+
+    /**
+     * @return HasMany<ShipmentDocument, $this>
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ShipmentDocument::class)->latest('id');
+    }
+
+    /**
      * @return HasMany<Invoice, $this>
      */
     public function invoices(): HasMany
@@ -198,12 +273,98 @@ class Shipment extends Model
     }
 
     /**
-     * Recalculate financial totals from associated invoices
+     * Calculate documents compliance checklist
+     *
+     * @return array{total_required: int, uploaded_count: int, verified_count: int, percent_complete: int, items: array<string, bool>}
+     */
+    public function getDocumentsChecklistAttribute(): array
+    {
+        $requiredTypes = [
+            'commercial_invoice' => 'Commercial Invoice',
+            'packing_list' => 'Packing List',
+            'bill_of_lading' => 'Bill of Lading / Sea Waybill',
+            'certificate_of_origin' => 'Certificate of Origin',
+            'delivery_order' => 'Delivery Order (D/O)',
+        ];
+
+        $uploadedDocs = $this->documents;
+        $items = [];
+        $verifiedCount = 0;
+        $uploadedCount = 0;
+
+        foreach ($requiredTypes as $type => $label) {
+            $doc = $uploadedDocs->firstWhere('document_type', $type);
+            $isUploaded = $doc !== null;
+            $isVerified = $doc && $doc->status === 'verified';
+
+            if ($isUploaded) {
+                $uploadedCount++;
+            }
+            if ($isVerified) {
+                $verifiedCount++;
+            }
+
+            $items[$type] = [
+                'label' => $label,
+                'uploaded' => $isUploaded,
+                'verified' => $isVerified,
+                'document' => $doc,
+            ];
+        }
+
+        $total = count($requiredTypes);
+        $percent = $total > 0 ? (int) round(($uploadedCount / $total) * 100) : 0;
+
+        return [
+            'total_required' => $total,
+            'uploaded_count' => $uploadedCount,
+            'verified_count' => $verifiedCount,
+            'percent_complete' => $percent,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @return BelongsTo<Company, $this>
+     */
+    public function overseasAgent(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'overseas_agent_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function financialClosedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'financial_closed_by');
+    }
+
+    /**
+     * @return HasMany<TruckDispatch, $this>
+     */
+    public function truckDispatches(): HasMany
+    {
+        return $this->hasMany(TruckDispatch::class);
+    }
+
+    /**
+     * Recalculate financial totals from associated invoices (multi-currency aware)
      */
     public function recalculateFinancials(): void
     {
-        $revenue = (float) $this->invoices()->where('type', 'receivable')->where('status', '!=', 'cancelled')->sum('total_amount');
-        $cost = (float) $this->invoices()->where('type', 'payable')->where('status', '!=', 'cancelled')->sum('total_amount');
+        $revenue = (float) $this->invoices()
+            ->whereIn('type', ['receivable', 'debit_note'])
+            ->where('status', '!=', 'cancelled')
+            ->selectRaw('COALESCE(SUM(total_amount * COALESCE(exchange_rate, 1)), 0) as total')
+            ->value('total');
+
+        $cost = (float) $this->invoices()
+            ->whereIn('type', ['payable', 'credit_note'])
+            ->where('status', '!=', 'cancelled')
+            ->selectRaw('COALESCE(SUM(total_amount * COALESCE(exchange_rate, 1)), 0) as total')
+            ->value('total');
+
         $profit = $revenue - $cost;
         $margin = $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0;
 

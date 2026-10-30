@@ -7,10 +7,12 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Permission;
 use App\Models\Port;
+use App\Models\Quotation;
 use App\Models\Role;
 use App\Models\Shipment;
 use App\Models\ShipmentContainer;
 use App\Models\ShipmentMilestone;
+use App\Models\TruckDispatch;
 use App\Models\User;
 use App\Models\Vessel;
 use App\Models\Warehouse;
@@ -297,6 +299,26 @@ class FreightSeeder extends Seeder
             'country' => 'United Arab Emirates',
         ]);
 
+        $agentApexChina = Company::firstOrCreate(['name' => 'Apex Global Logistics Shanghai'], [
+            'code' => 'APEX-SHA',
+            'partner_type' => 'agent',
+            'tax_number' => 'CN-91310000',
+            'domain' => 'apexgl-sh.com',
+            'industry' => 'International Freight Forwarding',
+            'city' => 'Shanghai',
+            'country' => 'China',
+        ]);
+
+        $agentEuroTrans = Company::firstOrCreate(['name' => 'EuroTrans Hamburg GmbH'], [
+            'code' => 'EURO-HAM',
+            'partner_type' => 'agent',
+            'tax_number' => 'DE-81523490',
+            'domain' => 'eurotrans-hamburg.de',
+            'industry' => 'International Freight Forwarding',
+            'city' => 'Hamburg',
+            'country' => 'Germany',
+        ]);
+
         // 5. Vessels
         $vesselOscar = Vessel::firstOrCreate(['imo_number' => '9703291'], [
             'name' => 'MSC Oscar',
@@ -372,6 +394,25 @@ class FreightSeeder extends Seeder
             'margin_percentage' => 27.11,
             'created_by' => $user?->id,
             'notes' => 'High priority shipment. Customs clearance documents pre-lodged with El-Dawlia.',
+            'acid_number' => 'ACID-2026-EG-998812',
+            'bayan_number' => 'BYN-ALX-44210',
+            'customs_office' => 'Alexandria Port Customs (Dekheila Terminal)',
+            'customs_stage' => 'duties_assessed',
+            'customs_duty_amount' => 12500.00,
+            'customs_vat_amount' => 18200.00,
+            'customs_fees_amount' => 3500.00,
+            'customs_assessment_date' => Carbon::now()->subDays(1)->format('Y-m-d'),
+            'delivery_order_number' => 'DO-MSC-2026-909',
+            'delivery_order_date' => Carbon::now()->subDays(2)->format('Y-m-d'),
+            'delivery_order_status' => 'exchanged',
+            'overseas_agent_id' => $agentApexChina->id,
+            'agent_share_type' => 'fifty_fifty',
+            'agent_share_percentage' => 50.00,
+            'agent_profit_share_amount' => 1925.00,
+            'agent_debit_credit_type' => 'debit',
+            'agent_settlement_status' => 'issued',
+            'agent_settlement_reference' => 'DN-2026-0001',
+            'financial_status' => 'open',
         ]);
 
         // Containers for Shipment 1
@@ -557,6 +598,31 @@ class FreightSeeder extends Seeder
             'total_price' => 1000.00,
         ]);
 
+        // Inland Drayage Dispatch Trip for Shipment 1
+        $c1 = ShipmentContainer::where('container_number', 'MSCU7123450')->first();
+        TruckDispatch::firstOrCreate(['dispatch_number' => 'TRK-2026-0001'], [
+            'shipment_id' => $shipment1->id,
+            'shipment_container_id' => $c1?->id,
+            'trucking_company_id' => $truckerNile->id,
+            'driver_name' => 'Ibrahim Hassan (إبراهيم حسن)',
+            'driver_phone' => '+20 10 1234 5678',
+            'driver_national_id' => '28804150102938',
+            'truck_plate' => 'ط ر أ 4519',
+            'trailer_plate' => 'س ق د 8812',
+            'origin_address' => 'Alexandria Port, Dekheila Yard 4',
+            'delivery_address' => 'Al-Amal Central Warehouse, 6th of October Industrial Zone 3',
+            'empty_return_depot' => 'Maersk Almajd Empty Depot, Amreya, Alexandria',
+            'empty_return_receipt' => 'EIR-MSCU-90214',
+            'status' => 'in_transit',
+            'dispatched_at' => Carbon::now()->subHours(6),
+            'loaded_at' => Carbon::now()->subHours(2),
+            'driver_cost' => 500.00,
+            'client_charge' => 700.00,
+            'currency' => 'USD',
+            'notes' => 'Container sealed SL-MSC-99120. Escorted cargo.',
+            'created_by' => $user?->id,
+        ]);
+
         // Shipment 2: Air Cargo (Frankfurt -> Cairo Cargo Village) - Delivered & Completed
         $shipment2 = Shipment::firstOrCreate(['shipment_number' => 'SHP-2026-0002'], [
             'booking_number' => 'AWB-MS-077-9871',
@@ -643,5 +709,116 @@ class FreightSeeder extends Seeder
 
         // Recalculate all financials
         $shipment1->recalculateFinancials();
+
+        // 6. Realistic Freight Quotations
+        $quote1 = Quotation::firstOrCreate(['quotation_number' => 'QT-2026-0001'], [
+            'customer_id' => $clientAlAmal->id,
+            'mode' => 'sea',
+            'service_type' => 'fcl',
+            'incoterm' => 'CIF',
+            'origin_port_id' => $portShanghai->id,
+            'destination_port_id' => $portAlex->id,
+            'commodity' => 'Solar Panels & Photovoltaic Inverters',
+            'estimated_transit_days' => 22,
+            'cargo_ready_date' => Carbon::now()->addDays(5)->format('Y-m-d'),
+            'valid_until' => Carbon::now()->addDays(14)->format('Y-m-d'),
+            'currency' => 'USD',
+            'status' => 'sent',
+            'payment_terms' => '50% on Booking, 50% upon OBL Surrender',
+            'terms_conditions' => "1. Ocean Freight subject to GRI and Bunker surcharges.\n2. Demurrage free time: 14 days at Alexandria Port.\n3. Rate valid for cargo loaded before validity date.",
+            'notes' => 'Client requested Maersk direct service if possible.',
+            'created_by' => $user?->id,
+        ]);
+
+        if ($quote1->wasRecentlyCreated) {
+            $quote1->items()->createMany([
+                [
+                    'charge_code' => 'OFRT',
+                    'description' => 'Ocean Freight 40ft High Cube (Shanghai -> Alex)',
+                    'category' => 'ocean_freight',
+                    'unit_type' => 'per_container',
+                    'quantity' => 2,
+                    'unit_price' => 2350.00,
+                    'total_price' => 4700.00,
+                    'currency' => 'USD',
+                ],
+                [
+                    'charge_code' => 'THC',
+                    'description' => 'Terminal Handling Charges (Origin CNSHA)',
+                    'category' => 'origin_charges',
+                    'unit_type' => 'per_container',
+                    'quantity' => 2,
+                    'unit_price' => 180.00,
+                    'total_price' => 360.00,
+                    'currency' => 'USD',
+                ],
+                [
+                    'charge_code' => 'DOC',
+                    'description' => 'Export Documentation & Bill of Lading Fee',
+                    'category' => 'documentation',
+                    'unit_type' => 'per_bl',
+                    'quantity' => 1,
+                    'unit_price' => 75.00,
+                    'total_price' => 75.00,
+                    'currency' => 'USD',
+                ],
+            ]);
+            $quote1->recalculateTotals();
+        }
+
+        $quote2 = Quotation::firstOrCreate(['quotation_number' => 'QT-2026-0002'], [
+            'customer_id' => $clientApex->id,
+            'mode' => 'air',
+            'service_type' => 'air_standard',
+            'incoterm' => 'DAP',
+            'origin_port_id' => $portFrankfurt->id,
+            'destination_port_id' => $portJebelAli->id,
+            'commodity' => 'Critical Medical Diagnostic Reagents & Vaccines',
+            'estimated_transit_days' => 3,
+            'cargo_ready_date' => Carbon::now()->addDays(2)->format('Y-m-d'),
+            'valid_until' => Carbon::now()->addDays(7)->format('Y-m-d'),
+            'currency' => 'USD',
+            'status' => 'accepted',
+            'payment_terms' => 'Net 30 Days after Delivery',
+            'terms_conditions' => "1. Cold chain active packaging included (+2C to +8C).\n2. Airport-to-Airport air freight rate valid on scheduled Lufthansa Cargo.\n3. Customs clearance at DWC included.",
+            'notes' => 'Customer confirmed acceptance via email.',
+            'created_by' => $user?->id,
+        ]);
+
+        if ($quote2->wasRecentlyCreated) {
+            $quote2->items()->createMany([
+                [
+                    'charge_code' => 'AFRT',
+                    'description' => 'Air Freight per Chargeable KG (FRA -> DXB)',
+                    'category' => 'air_freight',
+                    'unit_type' => 'per_kg',
+                    'quantity' => 1250,
+                    'unit_price' => 3.80,
+                    'total_price' => 4750.00,
+                    'currency' => 'USD',
+                ],
+                [
+                    'charge_code' => 'FSC',
+                    'description' => 'Airline Fuel & Security Surcharge',
+                    'category' => 'air_freight',
+                    'unit_type' => 'per_kg',
+                    'quantity' => 1250,
+                    'unit_price' => 0.65,
+                    'total_price' => 812.50,
+                    'currency' => 'USD',
+                ],
+                [
+                    'charge_code' => 'CUST',
+                    'description' => 'Import Customs Clearance & Delivery Order Fee',
+                    'category' => 'customs',
+                    'unit_type' => 'per_shipment',
+                    'quantity' => 1,
+                    'unit_price' => 450.00,
+                    'total_price' => 450.00,
+                    'currency' => 'USD',
+                ],
+            ]);
+            $quote2->recalculateTotals();
+        }
     }
 }

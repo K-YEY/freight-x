@@ -131,7 +131,9 @@ class BillingController extends Controller
         $year = date('Y');
         $prefix = $validated['type'] === 'receivable' ? 'INV' : 'BILL';
         $count = Invoice::where('type', $validated['type'])->count() + 1;
-        $invoiceNumber = sprintf('%s-%s-%04d', $prefix, $year, $count);
+        do {
+            $invoiceNumber = sprintf('%s-%s-%04d', $prefix, $year, $count++);
+        } while (Invoice::where('invoice_number', $invoiceNumber)->exists());
 
         $invoice = Invoice::create([
             'invoice_number' => $invoiceNumber,
