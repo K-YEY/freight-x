@@ -70,8 +70,8 @@ export default function OfficeExpensesIndex({ expenses, employees, categoryOptio
     };
 
     return (
-        <AppLayout title="مصاريف المكتب والمصروفات الإدارية">
-            <Head title="مصاريف المكتب والمصروفات الإدارية | Freight-X" />
+        <AppLayout title={t('office_expenses')}>
+            <Head title={`${t('office_expenses')} | ${t('app_name')}`} />
 
             <div className="p-6 space-y-6 max-w-7xl mx-auto">
                 
@@ -80,14 +80,14 @@ export default function OfficeExpensesIndex({ expenses, employees, categoryOptio
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h1 className="text-xl font-bold text-neutral-900 dark:text-white">
-                                مصاريف المكتب والمصروفات الإدارية والعمومية
+                                {t('office_expenses_title')}
                             </h1>
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                رقابة المصروفات
+                                {isRTL ? 'نثريات ورقابة' : 'Overheads & Audit'}
                             </span>
                         </div>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                            تسجيل ومتابعة إيجارات المقرات، فواتير الإنترنت والمرافق، ضيافة العملاء، المطبوعات، ورسوم الغرفة الملاحية.
+                            {t('office_expenses_subtitle')}
                         </p>
                     </div>
 
@@ -97,7 +97,7 @@ export default function OfficeExpensesIndex({ expenses, employees, categoryOptio
                         className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer shadow-sm shadow-rose-600/30 active:scale-95"
                     >
                         <Plus className="w-4 h-4" />
-                        <span>إضافة مصروف مكتب جديد</span>
+                        <span>{t('new_expense')}</span>
                     </button>
                 </div>
 
@@ -105,40 +105,40 @@ export default function OfficeExpensesIndex({ expenses, employees, categoryOptio
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="p-4 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs space-y-1">
                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-medium">
-                            <span>مصاريف الشهر الحالي</span>
+                            <span>{t('this_month_expenses')}</span>
                             <Calendar className="w-4 h-4 text-purple-500" />
                         </div>
                         <div className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
                             {Number(stats.this_month_total).toLocaleString()} <span className="text-xs font-normal text-neutral-400">EGP</span>
                         </div>
                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                            إجمالي المنصرف خلال الشهر الجاري
+                            {isRTL ? 'إجمالي المنصرف خلال الشهر الجاري' : 'Total disbursed during current month'}
                         </div>
                     </div>
 
                     <div className="p-4 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs space-y-1">
                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-medium">
-                            <span>مصروفات اليوم</span>
+                            <span>{t('today_expenses')}</span>
                             <Wallet className="w-4 h-4 text-rose-500" />
                         </div>
                         <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400">
                             {Number(stats.today_total).toLocaleString()} <span className="text-xs font-normal text-neutral-400">EGP</span>
                         </div>
                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                            حركات الخزينة المنصرفة اليوم
+                            {isRTL ? 'حركات الخزينة المنصرفة النهاردة' : 'Expenses recorded today'}
                         </div>
                     </div>
 
                     <div className="p-4 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs space-y-1">
                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-medium">
-                            <span>إجمالي المصروفات التراكمي</span>
+                            <span>{t('all_time_expenses')}</span>
                             <TrendingDown className="w-4 h-4 text-blue-500" />
                         </div>
                         <div className="text-2xl font-bold font-mono text-neutral-900 dark:text-white">
                             {Number(stats.all_time_total).toLocaleString()} <span className="text-xs font-normal text-neutral-400">EGP</span>
                         </div>
                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                            المصروفات العمومية والإدارية المسجلة
+                            {isRTL ? 'إجمالي كل المصاريف الإدارية المسجلة' : 'All time administrative costs'}
                         </div>
                     </div>
                 </div>
@@ -201,14 +201,14 @@ export default function OfficeExpensesIndex({ expenses, employees, categoryOptio
                         <table className="w-full text-start border-collapse text-xs">
                             <thead>
                                 <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#1c1c1e] text-neutral-500 dark:text-neutral-400 font-semibold">
-                                    <th className="py-3 px-4 text-start">رقم المصروف</th>
-                                    <th className="py-3 px-3 text-start">بيان المصروف</th>
-                                    <th className="py-3 px-3 text-start">التصنيف</th>
-                                    <th className="py-3 px-3 text-start">الجهة المستفيدة</th>
-                                    <th className="py-3 px-3 text-start">التاريخ</th>
-                                    <th className="py-3 px-3 text-start">طريقة السداد</th>
-                                    <th className="py-3 px-3 text-end">المبلغ</th>
-                                    <th className="py-3 px-4 text-center w-24">الإجراءات</th>
+                                    <th className="py-3 px-4 text-start">{isRTL ? 'رقم المصروف' : 'Expense #'}</th>
+                                    <th className="py-3 px-3 text-start">{t('expense_title')}</th>
+                                    <th className="py-3 px-3 text-start">{t('category')}</th>
+                                    <th className="py-3 px-3 text-start">{t('paid_to')}</th>
+                                    <th className="py-3 px-3 text-start">{t('dates')}</th>
+                                    <th className="py-3 px-3 text-start">{t('payment_method')}</th>
+                                    <th className="py-3 px-3 text-end">{t('amount')}</th>
+                                    <th className="py-3 px-4 text-center w-24">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-200/70 dark:divide-neutral-800/70">

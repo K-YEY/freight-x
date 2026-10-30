@@ -47,7 +47,7 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
     };
 
     const handleDeleteEmployee = (emp) => {
-        if (window.confirm(`هل أنت متأكد من حذف الموظف (${emp.name})؟`)) {
+        if (window.confirm(isRTL ? `متأكد إنك عاوز تحذف الموظف (${emp.name})؟` : `Are you sure you want to delete (${emp.name})?`)) {
             router.delete(`/employees/${emp.id}`);
         }
     };
@@ -55,8 +55,8 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
     const employeeData = employees.data || [];
 
     return (
-        <AppLayout title="الموظفين وفريق العمل">
-            <Head title="الموظفين وفريق العمل | Freight-X" />
+        <AppLayout title={t('employees')}>
+            <Head title={`${t('employees')} | ${t('app_name')}`} />
 
             <div className="p-6 space-y-6 max-w-7xl mx-auto">
                 
@@ -65,14 +65,14 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h1 className="text-xl font-bold text-neutral-900 dark:text-white">
-                                دليل الموظفين وفريق العمل
+                                {t('employees_title')}
                             </h1>
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                                {stats.total_count} موظف
+                                {stats.total_count} {t('records')}
                             </span>
                         </div>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                            إدارة كوادر الشحن والعمليات، الرواتب الشهرية، وتخصيص صلاحيات وأدوار النظام (Roles).
+                            {t('employees_subtitle')}
                         </p>
                     </div>
 
@@ -86,7 +86,7 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
                             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 transition-all cursor-pointer shadow-2xs"
                         >
                             <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>سند صرف / حركة مالية</span>
+                            <span>{t('record_transaction')}</span>
                         </button>
 
                         <button
@@ -95,7 +95,7 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
                             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-all cursor-pointer shadow-sm shadow-blue-600/30 active:scale-95"
                         >
                             <UserPlus className="w-4 h-4" />
-                            <span>إضافة موظف جديد</span>
+                            <span>{t('new_employee')}</span>
                         </button>
                     </div>
                 </div>
@@ -104,40 +104,40 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="p-4 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs space-y-1">
                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-medium">
-                            <span>إجمالي الموظفين</span>
+                            <span>{t('employees')}</span>
                             <Users className="w-4 h-4 text-blue-500" />
                         </div>
                         <div className="text-2xl font-bold font-mono text-neutral-900 dark:text-white">
                             {stats.total_count}
                         </div>
                         <div className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                            {stats.active_count} موظف نشط حالياً على رأس العمل
+                            {stats.active_count} {t('active_staff')}
                         </div>
                     </div>
 
                     <div className="p-4 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs space-y-1">
                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-medium">
-                            <span>إجمالي مسير الرواتب الأساسية</span>
+                            <span>{t('total_payroll')}</span>
                             <DollarSign className="w-4 h-4 text-emerald-500" />
                         </div>
                         <div className="text-2xl font-bold font-mono text-neutral-900 dark:text-white">
-                            {Number(stats.total_payroll).toLocaleString()} <span className="text-xs font-normal text-neutral-400">EGP / شهر</span>
+                            {Number(stats.total_payroll).toLocaleString()} <span className="text-xs font-normal text-neutral-400">EGP / {isRTL ? 'شهر' : 'mo'}</span>
                         </div>
                         <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                            الرواتب الأساسية المعتمدة للموظفين النشطين
+                            {isRTL ? 'المرتبات الأساسية للموظفين الشغالين' : 'Active staff basic salaries'}
                         </div>
                     </div>
 
                     <div className="p-4 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs space-y-1">
                         <div className="flex items-center justify-between text-neutral-500 dark:text-neutral-400 text-xs font-medium">
-                            <span>الأدوار والصلاحيات (Roles)</span>
+                            <span>{t('roles')}</span>
                             <Shield className="w-4 h-4 text-purple-500" />
                         </div>
                         <div className="text-2xl font-bold font-mono text-neutral-900 dark:text-white">
-                            {roles.length} <span className="text-xs font-normal text-neutral-400">أدوار قياسية</span>
+                            {roles.length} <span className="text-xs font-normal text-neutral-400">{isRTL ? 'أدوار محددة' : 'roles'}</span>
                         </div>
                         <div className="text-[11px] text-purple-600 dark:text-purple-400">
-                            مدير عام، عمليات، محاسبة، تخليص، مبيعات
+                            {isRTL ? 'مدير عام، عمليات، محاسبة، تخليص، مبيعات' : 'Admin, Ops, Finance, Customs, Sales'}
                         </div>
                     </div>
                 </div>
@@ -199,14 +199,14 @@ export default function EmployeesIndex({ employees, roles, departments, filters,
                         <table className="w-full text-start border-collapse text-xs">
                             <thead>
                                 <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#1c1c1e] text-neutral-500 dark:text-neutral-400 font-semibold">
-                                    <th className="py-3 px-4 text-start">الموظف</th>
-                                    <th className="py-3 px-3 text-start">المسمى والقسم</th>
-                                    <th className="py-3 px-3 text-start">الاتصال</th>
-                                    <th className="py-3 px-3 text-start">الراتب الأساسي</th>
-                                    <th className="py-3 px-3 text-center">دور النظام (Role)</th>
-                                    <th className="py-3 px-3 text-center">الحالة</th>
-                                    <th className="py-3 px-3 text-end">صافي المستحق</th>
-                                    <th className="py-3 px-4 text-center w-36">الإجراءات</th>
+                                    <th className="py-3 px-4 text-start">{t('employee_name')}</th>
+                                    <th className="py-3 px-3 text-start">{t('job_title')} & {t('department')}</th>
+                                    <th className="py-3 px-3 text-start">{t('phone')}</th>
+                                    <th className="py-3 px-3 text-start">{t('basic_salary')}</th>
+                                    <th className="py-3 px-3 text-center">{t('roles')}</th>
+                                    <th className="py-3 px-3 text-center">{t('status')}</th>
+                                    <th className="py-3 px-3 text-end">{t('remaining_balance')}</th>
+                                    <th className="py-3 px-4 text-center w-36">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-200/70 dark:divide-neutral-800/70">

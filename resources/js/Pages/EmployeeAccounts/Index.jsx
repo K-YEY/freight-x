@@ -67,8 +67,8 @@ export default function EmployeeAccountsIndex({ transactions, employees, filters
     const txnData = transactions.data || [];
 
     return (
-        <AppLayout title="حسابات الموظفين وسجل الرواتب">
-            <Head title="حسابات الموظفين وسجل الرواتب | Freight-X" />
+        <AppLayout title={t('employee_accounts')}>
+            <Head title={`${t('employee_accounts')} | ${t('app_name')}`} />
 
             <div className="p-6 space-y-6 max-w-7xl mx-auto print:p-0">
                 
@@ -77,14 +77,16 @@ export default function EmployeeAccountsIndex({ transactions, employees, filters
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h1 className="text-xl font-bold text-neutral-900 dark:text-white">
-                                حسابات الموظفين ومسير الرواتب والمستحقات
+                                {t('employee_accounts')}
                             </h1>
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                رواتب &bull; سلف &bull; مكافآت
+                                {isRTL ? 'رواتب • سلف • حوافز' : 'Payroll • Advances • Bonuses'}
                             </span>
                         </div>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                            متابعة استحقاقات الرواتب الشهرية، السلف الشخصية، الخصومات والبدلات، وسندات الصرف النقدية والبنكية.
+                            {isRTL 
+                                ? 'متابعة استحقاقات الرواتب الشهرية، السلف الشخصية، الخصومات والبدلات، وسندات الصرف النقدية والبنكية.'
+                                : 'Track staff monthly salaries, cash advances, deductions, allowances, and payment vouchers.'}
                         </p>
                     </div>
 
@@ -95,7 +97,7 @@ export default function EmployeeAccountsIndex({ transactions, employees, filters
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-all cursor-pointer shadow-sm shadow-purple-600/30 active:scale-95"
                         >
                             <Calendar className="w-4 h-4" />
-                            <span>إصدار مسير رواتب الشهر</span>
+                            <span>{t('issue_monthly_payroll')}</span>
                         </button>
 
                         <button
@@ -104,7 +106,7 @@ export default function EmployeeAccountsIndex({ transactions, employees, filters
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all cursor-pointer shadow-sm shadow-emerald-600/30 active:scale-95"
                         >
                             <Plus className="w-4 h-4" />
-                            <span>تسجيل حركة / سند صرف</span>
+                            <span>{t('record_transaction')}</span>
                         </button>
                     </div>
                 </div>
@@ -112,42 +114,42 @@ export default function EmployeeAccountsIndex({ transactions, employees, filters
                 {/* KPI Overview Cards (Hidden in Print) */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 print:hidden">
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs">
-                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">الرواتب المستحقة</span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">{t('salary')}</span>
                         <span className="text-base font-bold font-mono text-purple-600 dark:text-purple-400 block mt-1">
                             {Number(stats.total_salaries).toLocaleString()} <span className="text-[10px] font-normal text-neutral-400">EGP</span>
                         </span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs">
-                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">السلف الشخصية</span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">{t('total_advances')}</span>
                         <span className="text-base font-bold font-mono text-amber-600 dark:text-amber-400 block mt-1">
                             {Number(stats.total_advances).toLocaleString()} <span className="text-[10px] font-normal text-neutral-400">EGP</span>
                         </span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs">
-                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">المكافآت والبدلات</span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">{t('total_bonuses')}</span>
                         <span className="text-base font-bold font-mono text-blue-600 dark:text-blue-400 block mt-1">
                             {Number(stats.total_bonuses).toLocaleString()} <span className="text-[10px] font-normal text-neutral-400">EGP</span>
                         </span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs">
-                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">إجمالي الخصومات</span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">{t('total_deductions')}</span>
                         <span className="text-base font-bold font-mono text-rose-600 dark:text-rose-400 block mt-1">
                             {Number(stats.total_deductions).toLocaleString()} <span className="text-[10px] font-normal text-neutral-400">EGP</span>
                         </span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[#161617] border border-neutral-200/90 dark:border-neutral-800 shadow-2xs">
-                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">إجمالي ما تم صرفه</span>
+                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 block font-medium">{t('paid_amount')}</span>
                         <span className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400 block mt-1">
                             {Number(stats.total_paid).toLocaleString()} <span className="text-[10px] font-normal text-neutral-400">EGP</span>
                         </span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-blue-950/20 dark:bg-blue-950/30 border border-blue-800/40 shadow-2xs">
-                        <span className="text-[11px] text-blue-600 dark:text-blue-300 block font-bold">صافي المتبقي للصرف</span>
+                        <span className="text-[11px] text-blue-600 dark:text-blue-300 block font-bold">{t('remaining_balance')}</span>
                         <span className="text-base font-black font-mono text-blue-600 dark:text-blue-400 block mt-1">
                             {Number(stats.net_due).toLocaleString()} <span className="text-[10px] font-normal text-blue-400">EGP</span>
                         </span>

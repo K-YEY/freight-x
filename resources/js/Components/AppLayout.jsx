@@ -294,7 +294,7 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                             type="button"
                             onClick={() => router.post('/logout')}
                             className="p-1.5 text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer shrink-0"
-                            title="تسجيل الخروج من النظام"
+                            title={t('logout')}
                         >
                             <LogOut className="w-3.5 h-3.5" />
                         </button>
@@ -381,7 +381,7 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
                                 >
                                     <Users className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                                    <span>{locale === 'ar' ? 'إدارة الموظفين والكوادر' : 'Employees Management'}</span>
+                                    <span>{t('new_employee')}</span>
                                 </Link>
                                 <Link
                                     href="/employee-accounts"
@@ -389,7 +389,7 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
                                 >
                                     <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                    <span>{locale === 'ar' ? 'سند صرف / حسابات موظفين' : 'Employee Accounts & Payroll'}</span>
+                                    <span>{t('record_transaction')}</span>
                                 </Link>
                                 <Link
                                     href="/office-expenses"
@@ -397,7 +397,7 @@ export default function AppLayout({ children, title, companies = [], contacts = 
                                     className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg text-start transition-colors cursor-pointer"
                                 >
                                     <Banknote className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                                    <span>{locale === 'ar' ? 'تسجيل مصاريف المكتب' : 'Office Expenses'}</span>
+                                    <span>{t('new_expense')}</span>
                                 </Link>
                             </div>
                         )}
